@@ -45,7 +45,7 @@ Working title:
     marker: "",
     indent: 1cm,
     tight: true,
-    [Slovene: *Programski pristop k #PPT2 domnevi*],
+    [Slovene: *Programski pristop k domnevi #PPT2*],
     [English: *A Software Approach to the #PPT2 Conjecture*]
 )
 
