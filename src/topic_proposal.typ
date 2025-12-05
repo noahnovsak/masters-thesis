@@ -49,7 +49,7 @@ Working title:
     [English: *A Software Approach to the #PPT2 Conjecture*]
 )
 
-This topic was already approved last year: *NO*
+This topic was already approved last year: *YES*
 
 I declare that the mentors listed below have approved the submission of the thesis topic proposal described in the remainder of this document.
 
@@ -78,20 +78,13 @@ I propose the following co-mentor:
 
 #align(right)[
     #align(bottom)[
-        Ljubljana, December 5, 2024.
+        Ljubljana, December 5, 2025.
     ]
 ]
 
 #pagebreak()
 
-= Proposal of the thesis topic
-
-== Narrow field of study
-
-Quantum information theory, operator algebras, real algebraic geometry, mathematical optimization.
-
-== Keywords
-
+= Key-words
 quantum communication,
 positive-partial-transpose squared conjecture (#PPT2),
 positive not completely positive maps,
@@ -101,33 +94,13 @@ separable states,
 positive polynomials,
 sums-of-squares polynomials
 
-== Detailed thesis proposal
+= Detailed thesis proposal
+*Problem & State of the Art* The #PPT2 conjecture posits that the composition of any positive-partial-transpose (PPT) map with itself is entanglement breaking. This hypothesis is critical for quantum communication, particularly regarding the security and feasibility of quantum repeaters @Horodecki_2005 @Christandl_2017. While the conjecture is proven for low dimensions ($n <= 3$) @Chen_2019 @Christandl_2019 and specific classes such as Choi type maps @Singh_2022 and Gaussian quantum channels @Christandl_2019, it is widely believed to fail in higher dimensions ($n >= 4$). However, no general proof or counterexample exists. A MATLAB-based library exists for generating map candidates based on positive polynomials that are not sums-of-squares @bhardwaj2020 @phdthesis, but it is limited in scalability and performance due to the complexity of the underlying semidefinite programs (SDPs) and MATLAB's inefficiencies.
 
-=== Introduction and problem formulation
+*Expected Contributions / Technical Outcome* This work will deliver a high-performance, open-source software library in Julia capable of generating random positive maps that are not completely positive (PnCP) in higher dimensions. The primary contribution is a rigorous computational stress-test of the #PPT2 conjecture: we aim to either isolate a numerical counterexample, thereby disproving the conjecture, or provide significant statistical evidence of its validity. Additionally, the project will expand the tooling landscape by implementing methods to generate maps that are strictly $k$-positive but not $(k+1)$-positive, providing new resources for analyzing the geometry of quantum channels.
 
-We investigate the positive-partial-transpose squared (#PPT2) conjecture introduced by M. Christandl at Banff International Research Station Workshop: Operator Structures in Quantum Information Theory @Banff. The conjecture states that for any PPT map $Phi$, the composition $Phi compose Phi$ is entanglement breaking. Meaning, when the channel is applied to a part of an entangled state, it will result in a separable (non-entangled) state.
+*Methodology & Validation* We will re-architect the existing generation framework using Julia and the JuMP package to interface with high-performance solvers like MOSEK. The approach relies on polynomial sum-of-squares (SOS) relaxations to generate map candidates, followed by semidefinite programming (SDP) to verify separability criteria @Doherty_2004 @Harrow_2017: first, we will benchmark the new library against the legacy MATLAB implementation to quantify improvements in runtime, memory usage, and dimensional scalability. Second, we will deploy large-scale randomized sampling to probe the boundaries of the positive map cone, using SDP certificates to validate the entanglement-breaking properties of the composite maps.
 
-The importance of this conjecture comes to light in the context of quantum communication, for example when considering quantum repeaters. These seek to establish a secret key over a long distance out of entangled states over a smaller distance. While PPT states may allow the extraction of a private key @Horodecki_2005, the conjecture would imply that they cannot be used as a resource in a repeater @Christandl_2017.
-
-In lower dimensions, the #PPT2 conjecture is known to hold. This is trivial for $n=2$ and proven twice independently for $n=3$ @Chen_2019 @Christandl_2019. In higher dimensions the conjecture has also been proven to hold for certain special cases, i.e. all Choi-type maps @Singh_2022 and Gaussian quantum channels @Christandl_2019. However, it is believed _not_ to hold in general, even though no proofs or counterexamples have been found.
-
-The goal of this thesis is to investigate the #PPT2 conjecture in higher dimensions programmatically. Instead of attempting to find an analytic solution, we will generate random maps subject to the conjecture. Then we can reject the conjecture by counterexample or statistically validate it by testing separability. Testing separability is a well-studied problem in the context of polynomial sums-of-squares and semidefinite programming @Doherty_2004 @Fang_2020.
-
-=== Related work
-
-Besides the already mentioned work in lower dimensions and certain special cases, there have also been investigations in higher dimensions ($n gt.eq 4$). The authors of @jin2020 cover several possible approaches to finding a counterexample. The most direct approach is to find a PPT map $Phi$ and check if the composite map $Phi compose Phi$ is _not_ entanglement breaking. That is, finding the corresponding entanglement witness for the composite state. This is however extremely difficult. An alternative is to find a PPT entangled state as the composite channel and attempt to decompose it into two identical PPT channels. This saves us from verifying the composite is entanglement breaking, but in 4 dimensions still leaves us solving 256 nonlinear equations with 256 variables.
-
-Determining separability is proven to be NP-hard. However, there are existing solutions @Doherty_2004 that provide separability criteria that can be cast as semidefinite programs (SDPs). This allows for a mathematically straightforward way to calculate a decomposition, given a strong enough computer. Although, it remains to be seen if this is feasible in higher dimensions.
-
-The problem remains of finding the PPT map to test in the first place. Luckily, a method for generating positive maps that are not completely positive (PnCP) has already been proposed, based on the idea of generating positive polynomials that are not sums-of-squares @bhardwaj2020 @phdthesis. This is done by relaxing the positive condition to a multiplication with a polynomial, and then testing if the result is a sum of squares. This is a semidefinite program, and the main issue is choosing the right polynomial to make the SDP tractable. The proposed method is not yet scalable to higher dimensions due to the complexity of the underlying optimization problem and the performance issues of MATLAB.
-
-=== Expected contributions
-
-Our main goal is to provide a software library that can generate random PnCP maps in higher dimensions and use it to investigate the #PPT2 conjecture. Finding a counterexample would disprove the conjecture in higher dimensions, not finding one would still provide statistical evidence that if an example exists, it lies on the boundary of the cone of positive maps. Additionally, we will attempt to extend the library to generate maps that are $k$-positive and not ($k+1$)-positive in addition to PnCP maps.
-
-=== Methodology
-
-The existing `pncp` library will be rewritten in Julia, to include all the required tools that MATLAB provides, while increasing performance. To solve the necessary SDPs we will use the JuMP package, which provides an interface to performant solvers such as MOSEK and SeDuMi. The library will be tested against the existing MATLAB implementation to measure improvements in runtime, memory usage, and problem size scalability. If generating random maps in higher dimensions proves to be intractable, we will focus on optimizing the generation of specific subclasses of maps, such as ($k$, but not $k+1$)-positive maps.
 
 #bibliography(
     style: "aps.csl",
