@@ -1,8 +1,4 @@
-# Archive Folders
-matlab
-bibliography
-
-# Build Folders
+# Build
 .vscode
 
 # Data
@@ -10,3 +6,7 @@ data/*.mat
 
 # Julia
 Manifest*.toml
+
+# Misc
+dev
+thesis/bibliography/*.pdf
