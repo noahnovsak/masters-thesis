@@ -1,3 +1,12 @@
 # Archive Folders
 matlab
 bibliography
+
+# Build Folders
+.vscode
+
+# Data
+data/*.mat
+
+# Julia
+Manifest*.toml
