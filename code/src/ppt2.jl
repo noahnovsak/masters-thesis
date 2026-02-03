@@ -5,9 +5,8 @@ using JuMP
 using MosekTools
 using DynamicPolynomials
 using SumOfSquares
-using Random
 
-export gen_pncp, test_ent, test_pos, example_mat
+export gen_pncp
 
 """
     step1_1(n::Int, m::Int) -> Tuple
@@ -342,125 +341,6 @@ function gen_pncp(n::Int, m::Int)
     end
 
     return del, v, V
-end
-
-"""
-    test_pos(del::Float64, v::Vector, V::Matrix)
-
-Sanity check: test positivity at random points.
-
-Inputs:
-    del [Float64] - parameter value
-    v [Vector] - quadratic form coefficient vector
-    V [Matrix] - linear forms matrix
-"""
-function test_pos(del::Float64, v::Vector, V::Matrix, d::Int)
-    poly = del * v + 10 * vec(V * V')
-
-    for _ in 1:1000000
-        x = randn(d)
-        y = randn(d)
-
-        val = poly' * kron(kron(x, y), kron(x, y))
-
-        if val < 0
-            println("Form is not positive")
-            return
-        end
-    end
-
-    println("Form is (probably) positive")
-end
-
-function example_3()
-    X = 1.0 * Matrix(I, 9, 9)
-    X[2, 2] = 2.0
-    X[6, 6] = 2.0
-    X[7, 7] = 2.0
-    X[3, 3] = 0.5
-    X[4, 4] = 0.5
-    X[8, 8] = 0.5
-    X[1, 5] = 1.0
-    X[5, 1] = 1.0
-    X[1, 9] = 1.0
-    X[9, 1] = 1.0
-    X[2, 4] = 1.0
-    X[4, 2] = 1.0
-    X[3, 7] = 1.0
-    X[7, 3] = 1.0
-    X[6, 8] = 1.0
-    X[8, 6] = 1.0
-    X[5, 9] = 1.0
-    X[9, 5] = 1.0
-    return X
-end
-
-function example_4(a::Float64, t::Float64)
-    X = 1.0 * Matrix(I, 16, 16)
-    X[1, 1] = a ^ 2 + 1
-    X[2, 2] = a + 1 / a
-    X[3, 3] = 2
-    X[4, 4] = 2 * a
-    X[5, 5] = 2
-    X[6, 6] = 2 / a
-    X[7, 7] = 1 + 1 / a
-    X[8, 8] = a + 1 / a
-    X[9, 9] = a + 1 / a
-    X[10, 10] = 1 + 1 / a ^ 2
-    X[11, 11] = 2 / a
-    X[12, 12] = 2
-    X[13, 13] = 2 * a
-    X[14, 14] = 2
-    X[15, 15] = a + 1 / a
-    X[16, 16] = 1 + 1 / a ^ 2
-    X[1, 10] = 1
-    X[10, 1] = 1
-    X[2, 11] = 1
-    X[11, 2] = 1
-    X[3, 12] = 1
-    X[12, 3] = 1
-    X[5, 14] = 1
-    X[14, 5] = 1
-    X[6, 15] = 1
-    X[15, 6] = 1
-    X[7, 16] = 1
-    X[16, 7] = 1
-    X[6, 9] = 1
-    X[9, 6] = 1
-    X[7, 10] = 1
-    X[10, 7] = 1
-    X[8, 11] = 1
-    X[11, 8] = 1
-    X[2, 13] = -t
-    X[13, 2] = -t
-    X[3, 14] = -t
-    X[14, 3] = -t
-    X[4, 15] = -t
-    X[15, 4] = -t
-    return X
-end
-
-function example_mat(d::Int, ent::Bool)
-    if ent
-        if d == 3
-            C = example_3()
-        else
-            C = example_4(0.5, 0.2)
-        end
-    else
-        C = ones(d * d, d * d)
-    end
-    return C
-end
-
-function test_ent(d::Int, C::Matrix)
-    del, v, V = gen_pncp(d, d)
-    poly = del * v + 10 * vec(V * V')
-
-    ent = reshape(poly, d * d, d * d) * C
-    display(eigvals(ent))
-
-    return isposdef(ent), tr(ent)
 end
 
 end # module ppt2
