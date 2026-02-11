@@ -3,13 +3,17 @@ using ppt2
 
 function ispos(d::Int, attempts::Int, atol::Float64)
     del, v, V = gen_pncp(d, d)
-    poly = del * v + 10 * vec(V * V')
+
+    form = del * v + 10 * vec(V * V')
+
+    M = vec(poly2mat(form, d, d))
 
     for _ in 1:attempts
         x = randn(d)
         y = randn(d)
+        xy = kron(x, y)
 
-        if poly' * kron(kron(x, y), kron(x, y)) < -atol
+        if M' * kron(xy, xy) < -atol
             return false
         end
     end

@@ -6,7 +6,7 @@ using MosekTools
 using DynamicPolynomials
 using SumOfSquares
 
-export gen_pncp
+export gen_pncp, mat2block, block2mat, poly2mat, apply_map
 
 """
     step1_1(n::Int, m::Int) -> Tuple
@@ -144,62 +144,63 @@ Outputs:
 """
 function step2_2(n::Int, m::Int, Z::Matrix, W::Vector, V::Matrix)
     e = (n - 1) * (m - 1)
-    d = n + m - 2
+    d = n + m - 1
+    nm = n * m
 
     I_n = Matrix{Float64}(I, n, n)
     I_m = Matrix{Float64}(I, m, m)
-    I_nm = Matrix{Float64}(I, n*m, n*m)
+    I_nm = Matrix{Float64}(I, nm, nm)
 
     function E(i, j, k, l)
-        kron_ij = kron(I_n[:, i], I_m[:, j])
-        kron_kl = kron(I_n[:, k], I_m[:, l])
-        return kron(kron_ij, kron_kl) + kron(kron_kl, kron_ij)
+        e_ij = kron(I_n[:, i], I_m[:, j])
+        e_kl = kron(I_n[:, k], I_m[:, l])
+        return kron(e_ij, e_kl) + kron(e_kl, e_ij)
     end
 
-    row = 0
-    matrices = zeros(e*(d+1)+n*m*(n*m-1)÷2, n*n*m*m)
+    matrices = zeros(e*d+nm*(nm-1)÷2, nm^2)
+    row = 1
 
     for i = 1:e
-        for j = 1:d+1
-            row += 1
+        for j = 1:d
             matrices[row, :] = kron(Z[:, i], W[i][:, j])'
-        end
-    end
-
-    for i = 1:n*m-1
-        for j = i+1:n*m
             row += 1
-            matrices[row, :] = kron(I_nm[:, i], I_nm[:, j])' - kron(I_nm[:, j], I_nm[:, i])'
         end
     end
 
-    col = 0
-    matspan = zeros(Float64, n*n*m*m, n*m*e÷4+(d+1)^2)
+    for i = 1:nm-1
+        for j = i+1:nm
+            matrices[row, :] = kron(I_nm[:, i], I_nm[:, j])' - kron(I_nm[:, j], I_nm[:, i])'
+            row += 1
+        end
+    end
+
+    span = zeros(Float64, nm^2, nm*e÷4+d^2)
+    col = 1
 
     for i = 1:n-1
         for k = i+1:n
             for j = 1:m-1
                 for l = j+1:m
+                    span[:, col] = E(i, j, k, l) - E(i, l, k, j)
                     col += 1
-                    matspan[:, col] = E(i, j, k, l) - E(i, l, k, j)
                 end
             end
         end
     end
 
-    for i = 1:d+1
-        for j = 1:d+1
+    for i = 1:d
+        for j = 1:d
+            span[:, col] = kron(V[:, i], V[:, j]) + kron(V[:, j], V[:, i])
             col += 1
-            matspan[:, col] = kron(V[:, i], V[:, j]) + kron(V[:, j], V[:, i])
         end
     end
 
-    r = rank(matspan)
+    r = rank(span)
     ker = nullspace(matrices)
 
     while true
         v = ker * randn(size(ker, 2))
-        rank([matspan v]) > r && return v
+        rank([span v]) > r && return v
     end
 
     return v
@@ -238,6 +239,7 @@ function is_sos(n::Int, m::Int, v::Vector, V::Matrix)
 
     @constraint(model, F in SOSCone())
     @objective(model, Max, delta)
+
     optimize!(model)
 
     del = value(delta)
@@ -274,10 +276,9 @@ function step3(n::Int, m::Int, v::Vector, V::Matrix)
     # Linear and quadratic forms from input
     f = v' * kron(XY, XY)
     h = V' * XY
-    h_sos = h' * h
 
     # Create NNG/nonSOS form
-    poli = delta * f + 10 * h_sos
+    poli = delta * f + 10 * (h' * h)
 
     # SOS relaxation
     relax = poli * (XY' * XY)
@@ -341,6 +342,100 @@ function gen_pncp(n::Int, m::Int)
     end
 
     return del, v, V
+end
+
+function mat2block(M::Matrix, n::Int, m::Int)
+    @assert size(M) == (n*m, n*m) "M must be (n*m) x (n*m)"
+
+    Phi = [zeros(m, m) for _ in 1:n, _ in 1:n]
+
+    for i in 1:n
+        for j in 1:n
+            k = (i-1)*m+1 : i*m
+            l = (j-1)*m+1 : j*m
+            Phi[i, j] = M[k, l]
+        end
+    end
+
+    return Phi
+end
+
+function block2mat(Phi::Matrix)
+    n = size(Phi, 1)
+    m = size(Phi[1, 1], 1)
+
+    M = zeros(n*m, n*m)
+
+    for i in 1:n
+        for j in 1:n
+            k = (i-1)*m+1 : i*m
+            l = (j-1)*m+1 : j*m
+            M[k, l] = Phi[i, j]
+        end
+    end
+
+    return M
+end
+
+function poly2mat(form, m, n)
+    d = m * n
+
+    @polyvar X[1:m] Y[1:n]
+    XY = kron(X, Y)
+
+    p = form' * kron(XY, XY)
+
+    M = zeros(Float64, d, d)
+    for row in 1:d
+        for col in row:d
+            # block index
+            i = div(row - 1, m) + 1
+            j = div(col - 1, m) + 1
+
+            # index within block
+            k = mod(row - 1, n) + 1
+            l = mod(col - 1, n) + 1
+            
+            mon = X[i] * Y[k] * X[j] * Y[l]
+            val = DynamicPolynomials.coefficient(p, mon)
+            
+            if i != j
+                val = val / 2
+            end
+            if k != l
+                val = val / 2
+            end
+
+            if row == col
+                M[row, col] = val
+            else
+                M[row, col] = val
+                M[col, row] = val
+            end
+        end
+    end
+    return M
+end
+
+function apply_map(state::Matrix, phi::Matrix)
+    m = size(phi[1, 1], 1)
+    n = size(phi, 1)
+
+    mapped = Array{Matrix{Float64}}(undef, n, n)
+    for i=1:n
+        for j=1:n
+            L = state[i, j];
+            Lmap = zeros(m, m);
+            for k=1:n
+                for l=1:n
+                    Lmap = Lmap + L[k, l] * phi[k, l];
+                end
+            end
+            mapped[i, j] = Lmap;
+        end
+    end
+
+    return mapped
 end
 
 end # module ppt2
