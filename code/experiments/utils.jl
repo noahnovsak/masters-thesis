@@ -1,21 +1,5 @@
 module Utils
 
-export C3, C4, sep_state
-
-function C3()
-    return [
-        1.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  1.0
-        0.0  2.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0
-        0.0  0.0  0.5  0.0  0.0  0.0  1.0  0.0  0.0
-        0.0  1.0  0.0  0.5  0.0  0.0  0.0  0.0  0.0
-        1.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  1.0
-        0.0  0.0  0.0  0.0  0.0  2.0  0.0  1.0  0.0
-        0.0  0.0  1.0  0.0  0.0  0.0  2.0  0.0  0.0
-        0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.5  0.0
-        1.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  1.0
-    ]
-end
-
 function C4(a::Float64, t::Float64)
     @assert 0.0 <= a <= 1.0
     @assert 0.0 <= t <= a
@@ -45,7 +29,7 @@ function C4(a::Float64, t::Float64)
     ]
 end
 
-function sep_state(n::Int, m::Int; n_terms::Int=2)
+function rand_sep(n::Int, m::Int; n_terms::Int=2)
     d = n * m
     rho = zeros(d, d)
 
@@ -79,6 +63,10 @@ function choi(M::Matrix)
         end
     end
     return C
+end
+
+function mprint(x)
+    show(stdout, MIME"text/plain"(), x)
 end
 
 end

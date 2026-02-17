@@ -6,7 +6,7 @@ using MosekTools
 using DynamicPolynomials
 using SumOfSquares
 
-export gen_pncp, mat2block, block2mat, poly2mat, apply_map
+export gen_pncp, poly2mat, apply_map
 
 """
     step1_1(n::Int, m::Int) -> Tuple
@@ -347,22 +347,22 @@ end
 function mat2block(M::Matrix, n::Int, m::Int)
     @assert size(M) == (n*m, n*m) "M must be (n*m) x (n*m)"
 
-    Phi = [zeros(m, m) for _ in 1:n, _ in 1:n]
+    C = [zeros(m, m) for _ in 1:n, _ in 1:n]
 
     for i in 1:n
         for j in 1:n
             k = (i-1)*m+1 : i*m
             l = (j-1)*m+1 : j*m
-            Phi[i, j] = M[k, l]
+            C[i, j] = M[k, l]
         end
     end
 
-    return Phi
+    return C
 end
 
-function block2mat(Phi::Matrix)
-    n = size(Phi, 1)
-    m = size(Phi[1, 1], 1)
+function block2mat(C::Matrix)
+    n = size(C, 1)
+    m = size(C[1, 1], 1)
 
     M = zeros(n*m, n*m)
 
@@ -370,17 +370,17 @@ function block2mat(Phi::Matrix)
         for j in 1:n
             k = (i-1)*m+1 : i*m
             l = (j-1)*m+1 : j*m
-            M[k, l] = Phi[i, j]
+            M[k, l] = C[i, j]
         end
     end
 
     return M
 end
 
-function poly2mat(form, m, n)
-    d = m * n
+function poly2mat(form::Vector, n::Int, m::Int)
+    d = n * m
 
-    @polyvar X[1:m] Y[1:n]
+    @polyvar X[1:n] Y[1:m]
     XY = kron(X, Y)
 
     p = form' * kron(XY, XY)
@@ -388,17 +388,15 @@ function poly2mat(form, m, n)
     M = zeros(Float64, d, d)
     for row in 1:d
         for col in row:d
-            # block index
             i = div(row - 1, m) + 1
             j = div(col - 1, m) + 1
 
-            # index within block
-            k = mod(row - 1, n) + 1
-            l = mod(col - 1, n) + 1
-            
+            k = mod(row - 1, m) + 1
+            l = mod(col - 1, m) + 1
+
             mon = X[i] * Y[k] * X[j] * Y[l]
             val = DynamicPolynomials.coefficient(p, mon)
-            
+
             if i != j
                 val = val / 2
             end
@@ -417,25 +415,25 @@ function poly2mat(form, m, n)
     return M
 end
 
-function apply_map(state::Matrix, phi::Matrix)
-    m = size(phi[1, 1], 1)
-    n = size(phi, 1)
+function apply_map(state::Matrix, phi::Matrix, n::Int, m::Int)
+    C_state = mat2block(state, n, m)
+    C_phi = mat2block(phi, n, m)
 
     mapped = Array{Matrix{Float64}}(undef, n, n)
     for i=1:n
         for j=1:n
-            L = state[i, j];
+            L = C_state[i, j];
             Lmap = zeros(m, m);
             for k=1:n
                 for l=1:n
-                    Lmap = Lmap + L[k, l] * phi[k, l];
+                    Lmap = Lmap + L[k, l] * C_phi[k, l];
                 end
             end
             mapped[i, j] = Lmap;
         end
     end
 
-    return mapped
+    return block2mat(mapped)
 end
 
 end # module ppt2
