@@ -2,29 +2,20 @@ using Test
 using ppt2
 
 function ispos(n::Int, m::Int, attempts::Int, atol::Float64)
-    del, v, V = gen_pncp(n, m)
-
-    phi = del * v + 10 * vec(V * V')
-
-    C_phi = vec(poly2mat(phi, n, m))
+    C_phi = pncp_form(n, m)
 
     for _ in 1:attempts
         x = randn(n)
         y = randn(m)
         xy = kron(x, y)
 
-        if C_phi' * kron(xy, xy) < -atol
-            return false
-        end
+        @test xy' * C_phi * xy > -atol
     end
-
-    return true
 end
 
-@testset "Sanity check: test positivity at random points" begin
-    @test ispos(3, 3, 10000, 1e-6)
-    @test ispos(3, 4, 10000, 1e-6)
-    @test ispos(4, 3, 10000, 1e-6)
-    @test ispos(4, 4, 10000, 1e-6)
-    @test ispos(5, 5, 1000, 1e-6)
-end
+gen_pncp(3, 3)
+
+@testset "generate 3x3 positive form" ispos(3, 3, 1000000, 0.0)
+@testset "generate 3x4 positive form" ispos(3, 4, 1000000, 0.0)
+@testset "generate 4x3 positive form" ispos(4, 3, 1000000, 0.0)
+@testset "generate 4x4 positive form" ispos(4, 4, 100000, 0.0)

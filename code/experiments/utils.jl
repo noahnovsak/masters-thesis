@@ -1,5 +1,3 @@
-module Utils
-
 function C4(a::Float64, t::Float64)
     @assert 0.0 <= a <= 1.0
     @assert 0.0 <= t <= a
@@ -46,6 +44,19 @@ function rand_sep(n::Int, m::Int; n_terms::Int=2)
     return rho
 end
 
+function rand_psd(n::Int, m::Int; r::Int=0)
+    d = n * m
+    rho = zeros(d, d)
+    r = r > 0 ? r : d
+
+    for _ in 1:r
+        psi = randn(d)
+        rho += psi * psi'
+    end
+
+    return rho
+end
+
 function E(dim::Int, row::Int, col::Int)
     M = zeros(dim, dim)
     M[row, col] = 1
@@ -67,6 +78,4 @@ end
 
 function mprint(x)
     show(stdout, MIME"text/plain"(), x)
-end
-
 end
