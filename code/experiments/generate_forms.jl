@@ -1,12 +1,14 @@
 using JLD2
 using Base.Threads
+using Random
 using ProgressMeter
 using ppt2
 
-const TOTAL_MATRICES = 10000
-const BATCH_SIZE = 1000
-const N = 3
-const M = 3
+const TOTAL_MATRICES = 1000
+const BATCH_SIZE = 200
+const N = 4
+const M = 4
+const RNG = Xoshiro(0)
 const FILENAME = "pncp_forms_$(N)x$(M).jld2"
 
 function generate()
@@ -18,7 +20,7 @@ function generate()
         batch_results = Vector{Matrix{Float64}}(undef, BATCH_SIZE)
 
         @showprogress @threads for i in 1:BATCH_SIZE
-            batch_results[i] = pncp_form(N, M)
+            batch_results[i] = pncp_mat(N, M, RNG)
         end
 
         jldopen(FILENAME, "a+") do file
