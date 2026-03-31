@@ -355,8 +355,8 @@ function ampliation(state::Matrix, C_phi::Matrix, n::Int, m::Int)
     return block2mat(mapped, n, m)
 end
 
-function rand_ppt(n::Int, m::Int; rng=Random.GLOBAL_RNG)
-    A = randn(n*m, n*m; rng=rng)
+function rand_ppt(n::Int, m::Int; rng=Random.GLOBAL_RNG, rand_vec=_rand_vec)
+    A = rand_vec(n*m, n*m; rng=rng)
     rho = A * A'
     for i in 1:m, j in i+1:m
         rows = (i - 1) * n + 1:i * n
