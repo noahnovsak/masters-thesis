@@ -27,6 +27,33 @@ function C4(a::Float64, t::Float64)
     ]
 end
 
+function example_bound_entangled(a::Float64)
+    @assert 0.0 <= a <= 1.0
+
+    aii = (1 + a) / 2
+    aij = sqrt(1 - a^2) / 2
+
+    return 1 / (8 * a + 1) * [
+          a  0.0  0.0  0.0    a  0.0  0.0  0.0    a
+        0.0    a  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+        0.0  0.0    a  0.0  0.0  0.0  0.0  0.0  0.0
+        0.0  0.0  0.0    a  0.0  0.0  0.0  0.0  0.0
+          a  0.0  0.0  0.0    a  0.0  0.0  0.0    a
+        0.0  0.0  0.0  0.0  0.0    a  0.0  0.0  0.0
+        0.0  0.0  0.0  0.0  0.0  0.0  aii  0.0  aij
+        0.0  0.0  0.0  0.0  0.0  0.0  0.0    a  0.0
+          a  0.0  0.0  0.0    a  0.0  aij  0.0  aii
+    ]
+end
+
+function B(d::Int)
+    b = zeros(d, d)
+    for k in 1:d
+        b[k, end-k+1] = (-1)^k
+    end
+    return b
+end
+
 function rand_sep(n::Int, m::Int; n_terms::Int=2)
     d = n * m
     rho = zeros(d, d)
