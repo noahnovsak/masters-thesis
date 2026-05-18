@@ -6,7 +6,10 @@ data/*.mat
 
 # Julia
 Manifest*.toml
+*.jld2
 
 # Misc
 dev
 thesis/bibliography/*.pdf
+notes
+todo.txt
