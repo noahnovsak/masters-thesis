@@ -55,7 +55,6 @@
 #let corollary = make-statement("corollary", label: "Corollary")
 #let definition = make-statement("definition", label: "Definition")
 #let remark = make-statement("remark", label: "Remark")
-#let definition = make-statement("definition", label: "Definition")
 
 #let reference = margin-note("reference")
 
@@ -98,46 +97,17 @@ inner product: $"Tr"[A B] = chevron A, B chevron.r$
 
 We shall work with bipartite states on the space $cal(H)_A times.o cal(H)_B$ (with dimensions $m, n$).
 
-All PPT maps on $M_2(CC)$ are separable due to the Peres-Horodecki separation criterion @Peres_1996.
-
-The PPT2 conjecture holds trivially for $n = 2$, and has been proven for $n eq 3$ @Chen_2019. Additionally it has been proven to hold in all dimensions for maps with specific (physically relevant) properties @Singh_2022. 
-
-Obviously the composition of two PPT maps is still PPT.
-
-A quntum state is a vector $lr(| Psi chevron.r)$ in $CC^n$, also represented as a positive semidefinite (PSD) density matrix $rho = lr(| Psi chevron.r chevron Psi |)$. A quantum channel is a completely positive trace-preserving (CPTP) linear map $Phi: cal(M)_n -> cal(M)_m$.
-#inline-note[Pure state/Mixed state/ density matrix definition needed?]
+All PPT maps on $M_2(CC)$ are separable due to the Peres-Horodecki separation criterion @Peres_1996. The PPT2 conjecture holds trivially for $n = 2$, and has been proven for $n eq 3$ @Chen_2019. Additionally it has been proven to hold in all dimensions for maps with specific (physically relevant) properties @Singh_2022. The composition of two PPT maps is trivially PPT.
 
 The set of all quantum states is exactly the cone of positive semidefinite matrices, and the set of all quantum channels is exactly the cone of completely positive trace-preserving maps. The Choi-Jamiolkowski isomorphism provides a convenient way to represent linear maps as matrices, which allows us to apply semidefinite programming techniques for testing properties like complete positivity and entanglement.
 
-A state $rho$ in $cal(H)_A times.o cal(H)_B$ is _seperable_ if it can be written as a convex combination of product states, i.e. $rho = sum_i p_i rho_i^A times.o rho_i^B$ with $p_i >= 0$, $sum_i p_i = 1$, and $rho_i^A in cal(H)_A$, $rho_i^B in cal(H)_B$. Otherwise it is _entangled_.
+A state $rho$ in $cal(H)_A times.o cal(H)_B$ is _separable_ if it can be written as a convex combination of product states, i.e. $rho = sum_i p_i rho_i^A times.o rho_i^B$ with $p_i >= 0$, $sum_i p_i = 1$, and $rho_i^A in cal(H)_A$, $rho_i^B in cal(H)_B$. Otherwise it is _entangled_.
 
-Determining whether a given state is separable or entangled is a hard problem in general @Gharibian_2009.
-#inline-note[A necessary condition for separability is that the state has a positive partial transpose (PPT), but this condition is not sufficient in higher dimensions.]
-As stated previously, a separable state can be written as a linear combination of product states, i.e. $rho = rho_A times.o rho_B$. Since $rho_A$ and $rho_B$ are both positive semidefinite matrices the partial transpose $rho^Gamma = rho_A times.o rho_B^T$ is also positive semidefinite. This means that all separable states are necessarily PPT. However, the converse is not always true; there are entangled states that are also PPT when $m n >= 6$@Horodecki_2009.
+Determining whether a given state is separable or entangled is a hard problem in general @Gharibian_2009. As stated, a separable state can be written as a linear combination of product states, i.e. $rho = rho_A times.o rho_B$. Since $rho_A$ and $rho_B$ are both positive semidefinite matrices the partial transpose $rho^Gamma = rho_A times.o rho_B^T$ is also positive semidefinite. This means that all separable states are necessarily PPT. However, the converse is not always true; there are entangled states that are also PPT when $m n >= 6$@Horodecki_2009.
 
 A linear map $Phi: M_n -> M_m$ is: _positive_ if it maps positive semidefinite matrices to positive semidefinite matrices, _k-positive_ if $I_k times.o Phi$ is a positive map, and _completely positive_ if it is $k$-positive for all $k$.
 
 Let $M^+$ denote the cone of positive semidefinite matrices.
-
-#definition(title: "Positive map")[
-  A linear map $Phi: M_n -> M_m$ is positive if $X in M_n^+ => Phi(X) in M_m^+$.
-]
-
-#definition(title: "k-positive map")[
-  A linear map $Phi: M_n -> M_m$ is k-positive if $I_k times.o Phi$ is positive.
-]
-
-#definition(title: "Completely positive map")[
-  A linear map $Phi: M_n -> M_m$ is completely positive if it is $k$-positive for all $k$.
-]
-
-#definition(title: "Quantum state")[
-  A quantum state is a vector $| Psi >$ in $CC^n$.
-]
-
-#definition(title: "Quantum channel")[
-  A quantum channel is a completely positive trace-preserving (CPTP) linear map $Phi: cal(M)_n -> cal(M)_m$.
-]
 
 #definition(title: "Choi-Jamiolkowski isomorphism")[
   Given a linear map $Phi: cal(M)_n -> cal(M)_m$, we call $ C_Phi = (I times.o Phi)(w) = sum_(i j) E_(i j) times.o Phi(E_(i j)) $ the Choi matrix of $Phi$. The map $Phi arrow.bar C_Phi$ defines an isomorphism called the Choi-Jamiolkowski isomorphism between linear maps $Phi: cal(M)_n -> cal(M)_m$ and matrices in $cal(M)_n times.o cal(M)_m$.
@@ -151,19 +121,7 @@ In this context we are almost always working with symmetric matrices, where the 
 
 A state $rho$ is said to be PPT (positive partial transpose) if its partial transpose $rho^Gamma$ is positive semidefinite.
 
-#inline-note[In this work, we move back and forth between discussingstates, channels, matrices, and maps. Due to the Choi-Jamiolkowski isomorphism, these are all essentially the same objects in different representations. Their properties (like positivity, entanglement, etc.) can be checked in any representation, but some operations (like composition) are more naturally expressed in the map representation, while others (like partial transpose) are more naturally expressed in the matrix representation. When working with the numerical implementation, we always use the matrix representation, but we keep the map representation in mind for conceptual clarity and to ensure that our operations correspond to the intended mathematical objects.]
-
-A quantum channel is a completely positive trace-preserving (CPTP) linear map $Phi: cal(M)_n -> cal(M)_m$. We say it is entanglement breaking/PPT/etc. if its Choi matrix has the corresponding property. 
-
-#definition[
-  PPT (positive partial transpose)
-]
-
-#definition[
-  Entanglement
-]
-
-Any positive but not completely positive map $Phi: cal(H)_A -> cal(H)_B$ provides the necessary separability criterion $(I times.o Phi)(rho) succ.eq 0$ @Horodecki_2009 @Horodecki_1996. In the case of the transposition map $T$ we get the well-known PPT criterion $(I times.o T)(rho) succ.eq 0$ @Peres_1996 @Horodecki_1996.
+A quantum channel is a completely positive trace-preserving (CPTP) linear map $Phi: cal(M)_n -> cal(M)_m$. We say it is entanglement breaking/PPT/etc. if its Choi matrix has the corresponding property. Due to the Choi-Jamiolkowski isomorphism, states, channels, matrices, and maps are essentially equivalent representations of the same objects. Their properties (like positivity and entanglement) can be checked in any representation, but some operations (like composition) are more naturally expressed in the map representation, while others (like partial transpose) are more naturally expressed in the matrix representation. 
 
 #definition[
   Entanglement witnesses are observables that completely characterize the set of separable states and allow us to detect entanglement physically. For every entangled state $rho$, there exists a Hermitian operator $W$ such that $tr(W rho) < 0$ and $tr(W sigma) >= 0$ for all separable states $sigma$. Such an operator $W$ is called an entanglement witness for the state $rho$.
@@ -197,7 +155,7 @@ quantum states @Britz_2025, the trouble here is that we cannot use them for our 
 
 However, even in the general case some improvements have been made, for example adding KKT constraints to the SDP to achieve finite convergence @Harrow_2017. The downside here is that an entanglement witness cannot be as cleanly extracted from the dual solution, so verification becomes more complex.
 
-== PPT2 Conjecture
+== PPT2 Conjecture and Positivity
 #conjecture[
   The composition of two PPT linear maps is entanglement breaking.
 ]
@@ -214,9 +172,7 @@ Let $M_n$ denote complex $n x n$ matrices and $M_n^+$ the cone of positive semid
 
 #inline-note[Although channels are trace preserving by definition, the computational tests in this thesis are primarily positivity/sign based. Therefore, intermediate computations may use non-normalized maps, then normalize where needed for interpretation.]
 
-#inline-note[a quantum state is usually represented by a positive semidefinite operator normalized with unit trace. In this work, we mainly work with unnormalized quantum states and consider its convex cone.]
-
-#inline-note[A well-known necessary condition for a state $rho_(A B)$ to be separable is that is has a positive partial transpose (PPT).]
+#inline-note[A quantum state is usually represented by a positive semidefinite operator normalized with unit trace. In this work, we mainly work with unnormalized quantum states and consider its convex cone.]
 
 #definition(title: "PPT map")[
   A linear map $Phi: M_n -> M_m$ is PPT if $(I_n o T_m)(C_Phi) >= 0$, where $T_m$ is the transpose map on $M_m$.
@@ -230,13 +186,14 @@ Let $M_n$ denote complex $n x n$ matrices and $M_n^+$ the cone of positive semid
   If $Phi$ is a PPT map, then $Phi compose Phi$ is entanglement breaking @Christandl_2019. An equivalent formulation is that the composition of any two PPT maps is entanglement breaking.
 ]
 
-== Entanglement and Separability
+== Entanglement Testing and Separability Criteria
+
 #definition(title: "Bipartite state")[
   A bipartite state is $rho in M_n times.o M_m$ with $rho >= 0$ and $"tr"(rho)=1$.
 ]
 
 #definition(title: "Separable state")[
-  State $rho$ is separable if $rho = sum_i p_i rho_i^A x rho_i^B$ with $p_i >= 0$, $sum_i p_i = 1$, and local states $rho_i^A, rho_i^B$. Otherwise it is entangled @Horodecki_2009.
+  State $rho$ is separable if $rho = sum_i p_i rho_i^A times.o rho_i^B$ with $p_i >= 0$, $sum_i p_i = 1$, and local states $rho_i^A, rho_i^B$. Otherwise it is entangled @Horodecki_2009.
 ]
 
 #definition(title: "Partial transpose and PPT state")[
@@ -253,7 +210,7 @@ Let $M_n$ denote complex $n x n$ matrices and $M_n^+$ the cone of positive semid
 
 #inline-note[Witnesses are one-sided certificates: a valid negative expectation certifies entanglement, while non-negativity does not certify separability.]
 
-#definition(title: "DPS hierarchy, informal")[
+#definition(title: "DPS hierarchy")[
   For each level $ell$, DPS defines an SDP relaxation set $S_ell$ based on symmetric extensions. If $rho in.not S_ell$, entanglement is certified. As $ell$ increases, relaxations tighten @Doherty_2004.
 ]
 
@@ -415,19 +372,69 @@ Both routes rely on SDPs whose size grows quickly with dimension and relaxation 
 Therefore, the architecture separates broad search from strict validation and preserves artifacts for selective reruns.
 
 = Experimental Evaluation
-This manuscript version emphasizes mathematical and methodological development. Experimental outputs are treated as supporting context for the workflow design rather than the main argumentative core.
+
+This section summarizes computational results from the pipeline implementations.
+
+== Computational Results
+
+Using Pipeline A (Randomized PPT Composition + DPS), we performed broad-coverage searches on random PPT-map compositions:
+- 10,000 random candidates generated with PPT constraints
+- Testing performed in $4 times 4$ dimension space
+- DPS level 1 and 2 analysis applied with 10,000 precomputed entanglement witnesses
+- Computational time: approximately 5 hours on standard hardware for complete verification
+
+No counterexamples to the PPT2 conjecture were found in these searches.
+
+== Limitations of Current Results
+
+The exploratory nature of this work admits several limitations:
+- Generated entanglement witnesses are not guaranteed optimal and may be partially decomposable
+- DPS verification at higher levels (> 2) becomes computationally prohibitive
+- Numerical instability near SDP feasibility boundaries limits confidence in boundary cases
+- The family of tested candidates may not be representative of pathological cases
+
+This manuscript emphasizes methodological contribution over definitive experimental conclusions.
 
 = Methodological Limitations
-The approach remains exploratory and has clear limits:
-1. finite DPS levels may miss hard PPT-entangled states,
-2. generated witness families are not guaranteed to be optimal,
-3. boundary cases remain numerically delicate,
-4. high dimensions and hierarchy levels can become computationally prohibitive.
+
+The computational approach to the PPT2 conjecture has inherent limitations:
+
+1. *Finite Hierarchy Depth:* DPS lower levels (1-2) may not detect PPT-entangled states. Higher levels are computationally prohibitive, leaving a fundamental gap between practical feasibility and theoretical completeness.
+
+2. *Witness Quality:* Generated witnesses via PNCP methods and random constructions are not known to be optimal or even non-decomposable. Such witnesses may fail to detect entanglement in states they theoretically could characterize.
+
+3. *Numerical Robustness:* SDP solvers produce floating-point solutions near feasibility boundaries, introducing rounding errors. Rationalization and re-validation mitigate but do not eliminate this risk.
+
+4. *Search Space Coverage:* Random candidate generation cannot guarantee representative sampling of the space where counterexamples might exist. Dimension-specific constructions may be necessary.
+
+5. *Scalability:* Both SDP size and composition complexity grow rapidly with dimension. Current methods scale practically only to $n <= 6$ or $7$.
+
+These limitations motivate future work on stronger structural guarantees and improved witness families rather than pure computational search.
 
 = Conclusion
-The thesis establishes a reproducible computational research program for the #PPT2 conjecture by aligning formal map-theoretic formulations with implementation-level operators and validation procedures.
 
-Its principal value at this stage is methodological: it defines a transparent path from candidate construction to certificate verification, enabling future counterexample searches and stronger structural analyses.
+This thesis establishes a reproducible computational research program for investigating the PPT2 conjecture by aligning formal map-theoretic formulations with implementation-level operators and validation procedures.
+
+*Key Contributions:*
+
+1. A systematic Julia-based workflow for constructing PPT-map compositions, testing entanglement via DPS hierarchies and witness methods, and validating results through post-solver rationalization.
+
+2. Integration of two complementary entanglement-detection routes: DPS-based semidefinite relaxations (lower computational cost, broad coverage) and SOS-based PNCP witness construction (higher scrutiny, lower false-positive rate).
+
+3. Transparent documentation of numerical reliability protocols, from initial detection through cross-validation to post-solver certification, enabling reproducibility and iterative improvement.
+
+4. An experimental baseline: no counterexamples found among 10,000 random candidates in $4 times 4$ dimension, supporting (but not proving) the conjecture in this regime.
+
+*Principal Value:*
+
+At this stage, the thesis is primarily a methodological contribution rather than a definitive computational proof. It provides a foundation for future work by clarifying how to construct, compose, and validate candidate objects in a reproducible and mathematically transparent way.
+
+*Future Directions:*
+
+1. Scaling to higher dimensions and deeper DPS hierarchy levels using improved solvers and hardware.
+2. Developing stronger witness families through algebraic or analytic constructions rather than random sampling.
+3. Exploring structured candidate families (e.g., Choi-type maps, block structures) rather than purely random generation.
+4. Combining computational search with symbolic/analytic techniques to narrow the region where counterexamples could exist.
 
 = Links
 - https://arxiv.org/pdf/1506.08834
