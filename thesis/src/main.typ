@@ -68,138 +68,236 @@ The main objectives are:
 The rest of the thesis is organized as follows. Chapter 2 provides mathematical prerequisites and formulations. Chapter 3 presents the computational workflow and implementation architecture. Chapter 4 discusses methodological limitations and numerical reliability. Chapter 5 concludes with implications and next directions.
 
 = Theoretical Background
-This chapter formalizes notation and statements used by the implementation.
+This chapter establishes the mathematical framework used throughout the thesis. We fix notation, define the key objects, and develop the tools needed for the computational pipeline in Chapter 3.
 
 == Preliminaries
-inner product: $"Tr"[A B] = chevron A, B chevron.r$
 
-Let $M_n$ denote the set of complex $n times n$ matrices and $M_n^+$ the cone of positive semidefinite matrices.
+=== Notation and matrix spaces
 
-We shall work with bipartite states on the space $cal(H)_A times.o cal(H)_B$ (with dimensions $m, n$).
+We write $M_n$ for the algebra of complex $n times n$ matrices, $H_n subset.eq M_n$ for the subspace of Hermitian matrices ($A = A^*$), and $M_n^+ subset.eq H_n$ for the cone of positive semidefinite matrices.
 
-All PPT maps on $M_2(CC)$ are separable due to the Peres-Horodecki separation criterion @Peres_1996. The #PPT2 conjecture holds trivially for $n = 2$, and has been proven for $n eq 3$ @Chen_2019. Additionally it has been proven to hold in all dimensions for maps with specific (physically relevant) properties @Singh_2022. The composition of two PPT maps is trivially PPT.
-
-The set of all quantum states is exactly the cone of positive semidefinite matrices, and the set of all quantum channels is exactly the cone of completely positive trace-preserving maps. The Choi-Jamiolkowski isomorphism provides a convenient way to represent linear maps as matrices, which allows us to apply semidefinite programming techniques for testing properties like complete positivity and entanglement.
-
-A state $rho$ in $cal(H)_A times.o cal(H)_B$ is _separable_ if it can be written as a convex combination of product states, i.e. $rho = sum_i p_i rho_i^A times.o rho_i^B$ with $p_i >= 0$, $sum_i p_i = 1$, and $rho_i^A in cal(H)_A$, $rho_i^B in cal(H)_B$. Otherwise it is _entangled_.
-
-#definition(name: "Entanglement-breaking map")[
-  A map $Phi: M_n -> M_n$ is entanglement breaking if $Phi(rho)$ is separable for every bipartite state $rho$.
+#definition(name: "Positive semidefinite and positive definite")[
+  A matrix $A in H_n$ is _positive semidefinite_ (PSD), written $A succ.eq 0$, if $x^* A x >= 0$ for all $x in CC^n$, or equivalently if all eigenvalues of $A$ are non-negative. If all eigenvalues are strictly positive, $A$ is _positive definite_ (PD), written $A succ 0$.
 ]
 
-Determining whether a given state is separable or entangled is a hard problem in general @Gharibian_2009. As stated, a separable state can be written as a linear combination of product states, i.e. $rho = rho_A times.o rho_B$. Since $rho_A$ and $rho_B$ are both positive semidefinite matrices the partial transpose $rho^Gamma = rho_A times.o rho_B^T$ is also positive semidefinite. This means that all separable states are necessarily PPT. However, the converse is not always true; there are entangled states that are also PPT when $m n > 6$ @Horodecki_2009.
+The _Hilbert-Schmidt inner product_ on $H_n$ is
+$ chevron.l A, B chevron.r := "Tr"[A B], $
+making $H_n$ an inner product space. For general $M_n$ the inner product is $chevron.l A, B chevron.r = "Tr"[A^* B]$.
 
-A linear map $Phi: M_n -> M_m$ is: _positive_ if it maps positive semidefinite matrices to positive semidefinite matrices, _k-positive_ if $I_k times.o Phi$ is a positive map, and _completely positive_ if it is $k$-positive for all $k$.
+We work with bipartite systems on the tensor product space $CC^m times.o CC^n$ (subsystem dimensions $m$ and $n$). The operator space is $M_m times.o M_n tilde.eq M_(m n)$. We write $E_(i j) in M_n$ for the matrix unit with a $1$ in position $(i,j)$ and zeros elsewhere.
 
-#definition(name: "Positive map")[
-  A linear map $Phi: M_n -> M_m$ is positive if $X in M_n^+ => Phi(X) in M_m^+$.
+=== Linear maps on matrix spaces
+
+#definition(name: "Positive, k-positive, and completely positive maps")[
+  Let $Phi: M_n -> M_m$ be a linear map.
+  - $Phi$ is _positive_ (P) if $A succ.eq 0 => Phi(A) succ.eq 0$.
+  - $Phi$ is _$k$-positive_ if $I_k times.o Phi: M_k times.o M_n -> M_k times.o M_m$ is positive.
+  - $Phi$ is _completely positive_ (CP) if it is $k$-positive for every $k in NN$ @Chen_2019.
 ]
 
-#definition(name: "k-positive and completely positive map")[
-  For $k >= 1$, map $Phi$ is $k$-positive if $I_k times.o Phi$ is positive. It is completely positive (CP) if it is $k$-positive for all $k$ @Chen_2019 @jin2020.
-]
-
-Given two matrix spaces $M_n$ and $M_m$, a linear map $Phi: M_n -> M_m$ is _positive_ if $Phi(A) succ.eq 0 space forall space A succ.eq 0$.
-For a given $k in NN$ such maps induce the _ampliation_ $Phi^k = I_k times.o Phi: M_k times.o M_n -> M_k times.o M_m$. If $Phi^k$ is positive, we say that $Phi$ is _$k$-positive_. If $Phi$ is $k$-positive for all $k$, we say that it is _completely positive_ (CP) @bhardwaj2020.
+Every CP map is positive. Maps that are positive but not completely positive (PNCP) are central to entanglement detection.
 
 #definition(name: "Choi-Jamiolkowski isomorphism")[
-  Given a linear map $Phi: M_n -> M_m$, we call $ C_Phi = (I times.o Phi)(w) = sum_(i j) E_(i j) times.o Phi(E_(i j)) $ the Choi matrix of $Phi$. The map $Phi arrow.bar C_Phi$ defines an isomorphism called the Choi-Jamiolkowski isomorphism between linear maps $Phi: M_n -> M_m$ and matrices in $M_n times.o M_m$.
+  The _Choi matrix_ of a linear map $Phi: M_n -> M_m$ is
+  $ C_Phi = (I_n times.o Phi)(omega_n) = sum_(i,j=1)^n E_(i j) times.o Phi(E_(i j)) in M_n times.o M_m, $
+  where $omega_n = sum_(i,j) E_(i j) times.o E_(i j)$ is the (unnormalized) maximally entangled state. The assignment $Phi arrow.bar C_Phi$ is a linear isomorphism between maps $M_n -> M_m$ and matrices in $M_n times.o M_m$.
 ]
-Under the Choi-Jamiolkowski isomorphism completely positive maps correspond to positive semidefinite matrices (PSD) @Choi_1975.
+
+Under this isomorphism, $Phi$ is CP if and only if $C_Phi succ.eq 0$ @Choi_1975, and $Phi$ is trace-preserving if and only if $"Tr"_B [C_Phi] = I_n$.
 
 #definition(name: "Partial transpose")[
-  Given a state $rho = sum rho_A times.o rho_B$ acting on $cal(H)_A times.o cal(H)_B$, its partial transpose (with respect to subsystem $B$) is defined as $rho^(T_B) = (I times.o T)(rho) = sum rho_A times.o rho_B^T$.
-]
-In this context we are almost always working with symmetric matrices, where the choice of subsystem for partial transpose is irrelevant, so we simply write $rho^Gamma$ for the partial transpose.
-
-A state $rho$ is said to be PPT (positive partial transpose) if its partial transpose $rho^Gamma$ is positive semidefinite.
-
-#definition(name: "PPT map")[
-  A linear map $Phi: M_n -> M_m$ is PPT if $(I_n compose T_m)(C_Phi) succ.eq 0$, where $T_m$ is the transpose map on the second subsystem.
+  For $rho = (rho_(i j))_(i,j=1)^m in M_m times.o M_n$ in block form with $rho_(i j) in M_n$, the _partial transpose_ with respect to subsystem $B$ is
+  $ rho^Gamma := (I_m times.o T)(rho) = (rho_(i j)^T)_(i,j=1)^m, $
+  where $T$ is the transposition map. For Hermitian $rho$, the choice of subsystem does not affect whether $rho^Gamma succ.eq 0$, so we drop the subscript.
 ]
 
-#definition(name: "PPT in Choi form")[
-  Map $Phi: M_n -> M_m$ is PPT iff $C_Phi succ.eq 0$ and $C_Phi^Gamma succ.eq 0$.
+#definition(name: "PPT state and PPT map")[
+  A state $rho in M_m times.o M_n$ is _PPT_ if $rho succ.eq 0$ and $rho^Gamma succ.eq 0$. A map $Phi: M_n -> M_m$ is _PPT_ if its Choi matrix is PPT:
+  $ C_Phi succ.eq 0 quad "and" quad C_Phi^Gamma succ.eq 0. $
 ]
 
-A quantum channel is a completely positive trace-preserving (CPTP) linear map $Phi: M_n -> M_m$. Due to the Choi-Jamiolkowski isomorphism, states, channels, matrices, and maps are essentially equivalent representations of the same objects. Their properties (like positivity and entanglement) can be checked in any representation, but some operations (like composition) are more naturally expressed in the map representation, while others (like partial transpose) are more naturally expressed in the matrix representation. 
+Since $C_Phi succ.eq 0$ characterizes CP maps, a PPT map is a CP map whose Choi matrix has non-negative partial transpose. The composition of two PPT maps is trivially PPT.
 
-#definition(name: "Entanglement witness")[
-  Entanglement witnesses are observables that completely characterize the set of separable states and allow us to detect entanglement physically. For every entangled state $rho$, there exists a Hermitian operator $W$ such that $tr(W rho) < 0$ and $tr(W sigma) >= 0$ for all separable states $sigma$. Such an operator $W$ is called an entanglement witness for the state $rho$.
-]
+=== Map composition via Choi matrices
 
-Positive but not completely positive (PNCP) maps and entanglement witnesses are linked by the Choi-Jamiolkowski isomorphism $C_Phi = (I times.o Phi)(omega)$. However, an important observation is that while $tr(C_Phi rho) >= 0$ is equivalent to $(I times.o Phi)(rho) succ.eq 0$, a particular witness is not equivalent to a positive map associated via isomorphism: the map proves a stronger condition @Horodecki_2009.
-
-Decomposable witnesses can be written as $W = P + Q^Gamma$, where $P$, $Q$ are positive operators @Lewenstein_2000. Such witnesses cannot detect PPT-entangled states, so we are particularly interested in non-decomposable witnesses.
-
-#inline-note[Witnesses are one-sided certificates: a valid negative expectation certifies entanglement, while non-negativity does not certify separability.]
-
-When computing the composition of two maps numerically, we are in reality working with their Choi matrices. Therefore, we cannot simply multiply them, instead we compute:
+The Choi matrix of a composition $Phi compose Psi$ is not the product $C_Phi C_Psi$. Expanding the definition directly gives:
 $
   C_(Phi compose Psi)
-  = sum_(i,j) E_(i j) times.o Phi(C^Psi_(i j))
-  = sum_(i,j) E_(i j) times.o sum_(k,l) (C^Psi_(i j))_(k l) Phi(E_(k l))
-  = sum_(i,j,k,l,p,q) (C^Psi_(i j))_(k l) (C^Phi_(k l))_(p q) E_(i j) times.o E_(p q)
+  = sum_(i,j) E_(i j) times.o Phi(Psi(E_(i j)))
+  = sum_(i,j) E_(i j) times.o Phi(sum_(k,l) (C_Psi)_(i k, j l) E_(k l))
+  = sum_(i,j,k,l,p,q) (C_Psi)_(i k, j l) (C_Phi)_(k p, l q) E_(i j) times.o E_(p q),
 $
-$ C^(Phi compose Psi)_(i p, j q) = sum_(k,l) C^Psi_(i k,p l) C^Phi_(k j, l q). $
+yielding the index-wise formula
+$ (C_(Phi compose Psi))_(i p, j q) = sum_(k,l) (C_Psi)_(i k, j l) (C_Phi)_(k p, l q). $
 
-== Semidefinite programming and DPS hierarchy
-Consider a quantum state $rho$ on systems $cal(H)_A$ and $cal(H)_B$, with dimensions $m$ and $n$. It is separable if there exist pure states $lr({ | phi_i chevron.r_A })$, $lr({ | chi_i chevron.r_B })$ and probabilities ${p_i}$ such that $rho = sum_i p_i lr(|phi_i chevron.r chevron phi_i| times.o |chi_i chevron.r chevron chi_i |)$.
+== Quantum States and Entanglement
 
-Let us denote the set of all separable states $S E P_(n,k) := "conv"lr({|phi_1 chevron.r chevron phi_1| times.o ... times.o |phi_k chevron.r chevron phi_k| : |phi_1 chevron.r, ..., |phi_k chevron.r in B(CC^n)})$, where conv is the convex hull and _B_ is the set of unit vectors.
+A _quantum state_ on $CC^n$ is a density matrix: a PSD matrix $rho in M_n^+$ with $"Tr"[rho] = 1$. A _quantum channel_ is a CPTP map $Phi: M_n -> M_m$.
 
-Testing entanglement can be reduced to the problem $h_(S E P)(M) = lr(max{"Tr"(M rho) : rho in S E P})$ @Harrow_2017. #margin-note[expand]
+#definition(name: "Separability and entanglement")[
+  A bipartite state $rho in M_m times.o M_n$ is _separable_ if
+  $ rho = sum_i p_i rho_i^A times.o rho_i^B, quad p_i >= 0, quad sum_i p_i = 1, quad rho_i^A in M_m^+, quad rho_i^B in M_n^+. $
+  Otherwise $rho$ is _entangled_.
+]
 
-Consider a separable state $rho in H(CC^n times.o CC^n) := sum_i lambda_i x_i x_i^* times.o y_i y_i^*$. Then, for integers $k >= 1$ the extended states $rho_k = sum_i lambda_i x_i x_i^* times.o (y_i y_i^*)^(times.o k)$, have the following properties: $ (I_n times.o Pi_k) rho_k (I_n times.o Pi_k) = rho_k, \ rho_k^Gamma_s succ.eq 0 space forall space s = 0, 1, ..., k, \ "Tr"_([2:k])(rho_k) = rho. $
+Deciding separability is NP-hard in general @Gharibian_2009, which motivates necessary conditions and convex relaxations.
 
-These states form a hierarchy of semidefinite relaxations that approximate the cone of separable states $S E P_n$ @Doherty_2004 $ "DPS"_n^k = {rho in H(CC^n times.o CC^n) : exists space rho_k in H(CC^n times.o (CC^n)^(times.o k))}. $
+#definition(name: "Entanglement-breaking map")[
+  A map $Phi: M_n -> M_m$ is _entanglement breaking_ (EB) if $(I_k times.o Phi)(rho)$ is separable for every $k in NN$ and every state $rho in M_k times.o M_n$.
+]
 
-Here we note  few properties of the hierarchy; 1. $"DPS"_n^1$ is equivalent to the PPT criterion, 2. $S E P_n subset.eq "DPS"_n^k$ and $"DPS"_n^(k+1) subset.eq "DPS"_n^k$ for all $k >= 1$, 3. the hierarchy is complete $inter.big_(k >= 1) "DPS"_n^k = S E P_n$ @Doherty_2004.
+=== Separability criteria
 
-A semidefninite program (SDP) is a type of convex optimization problem typically expressed as $ "minimize"& c^T bold(x) \ "subject to"& F(bold(x))  succ.eq 0, $ where $c$ is a given vector, $F(bold(x)) = F_0 + sum_i x_i F_i$ for some fixed hermitian matrices $F_i$, and $bold(x) = (x_1, ..., x_n)$ is the vector over which the optimization is performed. Importantly, for any such SDP (called the _primal_ problem) there exists an associated _dual_ problem $ "maximize"& -"Tr"[F_0 Z] \ "subject to"& Z  succ.eq 0 \ &"Tr"[F_i Z] = c_i, $ where $Z$ is the hermitian optimization matrix. When $c = 0$ we call the primal problem a _feasibility_ problem, and the dual problem a _certificate_ problem. In this case, if the primal is infeasible, the dual is feasible and provides a certificate of infeasibility.
+Several necessary conditions for separability allow entanglement detection when violated.
 
-In the case of the $"DPS"_n^t$ hierarchy, whenever the primal problem is infeasible (a PPT symmetric extension of $rho$ cannot be found), the certificate provided by the dual problem is an entanglement witness for the state $rho$.
+*PPT criterion.* If $rho$ is separable, then $rho^Gamma succ.eq 0$ @Peres_1996 @Horodecki_1996. The condition is necessary but not sufficient: bound entangled (PPT entangled) states exist whenever $m n > 6$ @Horodecki_2009.
 
-Much work has been done recently on semidefinite hierarchies for states with specific properties, i.e. diagonal unitary invariant bipartite quantum states @Britz_2025, the trouble here is that we cannot use them for our purposes since the PPT2 conjecture has already been proven for this family of states @Singh_2022, so we need to work with the more general DPS hierarchy.
+*Range criterion.* If $rho in M_m times.o M_n$ is separable, there exist product vectors $lr({|psi_i chevron.r times.o |phi_i chevron.r})$ spanning the range of $rho$ such that $lr({|psi_i chevron.r times.o overline(|phi_i chevron.r)})$ spans the range of $rho^Gamma$ @Horodecki_1997. The range criterion can detect certain PPT entangled states, but fails when $rho$ is full rank (e.g., under noise), since then any set of vectors spans its range trivially.
 
-However, even in the general case some improvements have been made, for example adding KKT constraints to the SDP to achieve finite convergence @Harrow_2017. The downside here is that an entanglement witness cannot be as cleanly extracted from the dual solution, so verification becomes more complex.
+*Reduction criterion.* If $rho in M_m times.o M_n$ is separable, then
+$ rho_A times.o I_n - rho succ.eq 0 quad "and" quad I_m times.o rho_B - rho succ.eq 0, $
+where $rho_A = "Tr"_B [rho]$ and $rho_B = "Tr"_A [rho]$ are the marginals @Horodecki_1999.
 
-== PNCP Maps and Sum-of-Squares Polynomials
-Positive but not completely positive (PNCP) maps are useful for two reasons: every entanglement witness corresponds to a PNCP map, and they can be used to construct bound entangled states, i.e. entangled states with positive partial transpose (PPT). In this thesis we use PNCP maps as an alternative route to DPS-based approaches for testing entanglement and witness extraction, enabling exact artithmetic validation @Fang_2020 @bhardwaj2020 @phdthesis.
+*Majorization criterion.* If $rho$ is separable, then $lambda(rho) prec lambda(rho_A)$ and $lambda(rho) prec lambda(rho_B)$, where $lambda(dot)$ denotes the non-increasingly ordered eigenvalue vector and $a prec b$ denotes majorization @Nielsen_2001. This follows from the reduction criterion @Nielsen_2001 and shares its limitations.
 
-Each linear map $Phi: M_n -> M_m$ corresponds to a quadratic polynomial $p_Phi (bold(x),bold(y)) in RR[bold(x), bold(y)]_(n,m) := bold(y)^T Phi(bold(x) bold(x)^T) bold(y)$. It is known that $Phi$ is positive if and only if $p_Phi$ is non-negative, and completely positive if and only if $p_Phi$ is a sum of squares (SOS) on $RR^(n+m)$ @Klep_2017.
+=== Entanglement witnesses
 
-So now, in addition to matrices and maps we have a third, polynomial, representation of the same objects. This allows us to use tools from polynomial optimization, in particular SOS relaxations. @kmsz provides a way to construct PNCP maps by generating random polynomials that are non-negative but not SOS.
+#definition(name: "Entanglement witness")[
+  A Hermitian operator $W$ is an _entanglement witness_ if $"Tr"[W sigma] >= 0$ for all separable $sigma$, and $"Tr"[W rho] < 0$ for some entangled $rho$.
+]
+
+By the Hahn-Banach theorem, for every entangled state $rho$ there exists a witness detecting it, so the family of all witnesses completely characterizes the set of separable states @Horodecki_2009. Witnesses are one-sided: a negative expectation value certifies entanglement, but a non-negative one does not certify separability.
+
+#definition(name: "Decomposable witness")[
+  A witness $W$ is _decomposable_ if $W = P + Q^Gamma$ for some $P, Q succ.eq 0$; otherwise it is _non-decomposable_ @Lewenstein_2000.
+]
+
+Decomposable witnesses cannot detect PPT entangled states: for any PPT state $sigma$, $"Tr"[(P + Q^Gamma) sigma] = "Tr"[P sigma] + "Tr"[Q sigma^Gamma] >= 0$. Only non-decomposable witnesses are useful for our purposes.
+
+Under the Choi-Jamiolkowski isomorphism, every entanglement witness $W = C_Phi$ corresponds to a PNCP map $Phi$. Note that the map condition $(I_k times.o Phi)(rho) succ.eq.not 0$ is strictly stronger than the scalar condition $"Tr"[C_Phi rho] < 0$ @Horodecki_2009.
+
+== Semidefinite Programming
+
+A _semidefinite program_ (SDP) is a convex optimization problem in which a linear objective is minimized subject to a linear matrix inequality (LMI) constraint. The standard primal form is
+
+$ "minimize" &quad c^T bold(x) \
+  "subject to" &quad F(bold(x)) := F_0 + sum_(i=1)^n x_i F_i succ.eq 0, $ <sdp-primal>
+
+where $bold(x) in RR^n$ is the optimization variable, $c in RR^n$ is the cost vector, and $F_0, F_1, ..., F_n in H_d$ are fixed Hermitian matrices. The associated _dual SDP_ is
+
+$ "maximize" &quad -"Tr"[F_0 Z] \
+  "subject to" &quad Z succ.eq 0, \
+               &quad "Tr"[F_i Z] = c_i, quad i = 1, ..., n. $ <sdp-dual>
+
+When the Slater condition holds (strictly feasible primal or dual), strong duality holds and primal and dual optima coincide. When $c = 0$, @sdp-primal is a _feasibility problem_: determine whether there exists $bold(x)$ with $F(bold(x)) succ.eq 0$. If infeasible, a dual feasible $Z succ.eq 0$ satisfying $"Tr"[F_i Z] = 0$ with $"Tr"[F_0 Z] > 0$ certifies infeasibility.
+
+=== Interior point methods
+
+SDPs are solved in practice by _interior point methods_ (IPMs), which follow a central path through the strict interior of the feasible region. An IPM applied to a $d times d$ SDP with $n$ variables reaches $epsilon$-accuracy in $O(sqrt(d) log(1 slash epsilon))$ iterations, each costing $O(n^2 d^2 + n d^3)$ arithmetic operations @Vandenberghe_1996. Because solvers produce floating-point solutions, feasibility conclusions near the boundary require post-solver validation (see Section @rationalization).
+
+=== Entanglement testing as an SDP
+
+Testing whether a state $rho$ is separable can be formulated as
+$ h_(S E P)(M) = max {"Tr"(M rho) : rho in S E P}, $
+which is NP-hard @Harrow_2017. The DPS hierarchy replaces $S E P$ with a sequence of SDP-representable outer approximations that converge to it, giving a tractable relaxation at each level.
+
+== DPS Hierarchy
+
+The Doherty-Parrilo-Spedalieri (DPS) hierarchy @Doherty_2004 provides a complete sequence of SDP relaxations of separability.
+
+=== Symmetric extensions
+
+For a separable state $rho = sum_i lambda_i x_i x_i^* times.o y_i y_i^*$, define the $k$-fold _symmetric extension_
+$ rho_k = sum_i lambda_i x_i x_i^* times.o (y_i y_i^*)^(times.o k) in H(CC^m times.o (CC^n)^(times.o k)). $
+This extension satisfies
+$ (I_m times.o Pi_k) rho_k (I_m times.o Pi_k) = rho_k, quad rho_k^(Gamma_s) succ.eq 0 quad forall s = 1,...,k, quad "Tr"_(B_2 ... B_k)[rho_k] = rho, $
+where $Pi_k$ is the projector onto the bosonic (fully symmetric) subspace of $(CC^n)^(times.o k)$.
+
+#definition(name: "DPS set at level k")[
+  $ "DPS"_n^k = lr({rho in H(CC^m times.o CC^n) : exists rho_k in H(CC^m times.o (CC^n)^(times.o k)) "satisfying the above three conditions"}). $
+]
+
+Each $"DPS"_n^k$ is defined by SDP constraints, so membership is testable in polynomial time for fixed $k$. The hierarchy satisfies @Doherty_2004:
+1. $S E P_n subset.eq "DPS"_n^k$ and $"DPS"_n^(k+1) subset.eq "DPS"_n^k$ for all $k >= 1$.
+2. $"DPS"_n^1$ is equivalent to the PPT criterion.
+3. Asymptotic completeness: $inter.big_(k >= 1) "DPS"_n^k = S E P_n$.
+
+=== DPS as an explicit SDP
+
+Testing $rho in "DPS"_n^k$ is the following feasibility SDP in the variable $rho_k$:
+$ "find" &quad rho_k succ.eq 0 \
+  "s.t." &quad (I_m times.o Pi_k) rho_k (I_m times.o Pi_k) = rho_k, \
+         &quad rho_k^(Gamma_s) succ.eq 0, quad s = 1, ..., k, \
+         &quad "Tr"_(B_2 ... B_k) [rho_k] = rho. $
+
+If feasible, $rho$ passes the level-$k$ test. If infeasible, the dual certificate $Z succ.eq 0$ yields an entanglement witness for $rho$ via $W = -"Tr"_(B_2 ... B_k) [Z]$.
+
+=== Improvements and limitations
+
+Adding KKT conditions to the SDP achieves _finite convergence_ at some level $k$ @Harrow_2017, but increases problem size and complicates witness extraction. Specialized hierarchies for diagonal unitary invariant states @Britz_2025 cannot be used here since the PPT2 conjecture is already proven for that family @Singh_2022.
+
+== Sum-of-Squares Polynomials and PNCP Maps
+
+A complementary approach to DPS exploits the polynomial representation of linear maps and the connection between sum-of-squares relaxations and SDPs.
+
+=== Non-negative polynomials and SOS
+
+Let $RR[bold(x), bold(y)]$ be the ring of real polynomials in $bold(x) in RR^n$, $bold(y) in RR^m$. A polynomial $p$ is _non-negative_ if $p(bold(x), bold(y)) >= 0$ for all inputs; it is a _sum of squares_ (SOS) if $p = sum_i q_i^2$ for polynomials $q_i$. Every SOS polynomial is non-negative, but not every non-negative polynomial is SOS — the gap between the two gives rise to PNCP maps.
+
+=== Gram matrix and SDP connection
+
+#definition(name: "Gram matrix representation")[
+  A homogeneous polynomial $p$ of degree $2d$ is SOS if and only if there exists $G succ.eq 0$ such that
+  $ p(bold(z)) = bold(v)(bold(z))^T G bold(v)(bold(z)), $
+  where $bold(v)(bold(z))$ is the vector of monomials of degree $d$ in $bold(z)$.
+]
+
+Testing whether $p$ is SOS therefore reduces to a semidefinite feasibility problem: find $G succ.eq 0$ satisfying the linear constraints that equate the coefficients of $bold(v)^T G bold(v)$ with those of $p$. If no such $G$ exists, $p$ is not SOS.
+
+=== Polynomial representation of maps
+
+Each linear map $Phi: M_n -> M_m$ corresponds to a biquadratic polynomial:
+$ p_Phi (bold(x), bold(y)) := bold(y)^T Phi(bold(x) bold(x)^T) bold(y). $
+
+The fundamental correspondence @Klep_2017 is:
+- $Phi$ is _positive_ if and only if $p_Phi >= 0$ on $RR^n times RR^m$.
+- $Phi$ is _completely positive_ if and only if $p_Phi$ is SOS.
+
+A PNCP map therefore corresponds exactly to a non-negative non-SOS polynomial. This gives a third equivalent representation of maps (alongside matrices and linear operators) and allows entanglement witnesses to be constructed via polynomial optimization.
 
 #algorithm-figure(
   "KMSZ construction for PNCP maps",
   {
-    Line[Generate random points $x in RR^n$, $y in RR^m$.]
-    Line[Use $x$, $y$ to create bilinear forms ${h_0, ..., h_t}$]
-    Line[Generate $f in.not lr(chevron h_0, ..., h_t chevron.r)$ such that $f != text(S O S)$.]
-    Line[Find $delta$ small enough that $F_delta = delta f + h_0^2 + ... + h_t^2 >= 0$.]
+    Line[Generate random points $x^((1)), ..., x^((t)) in RR^n$ and $y^((1)), ..., y^((t)) in RR^m$.]
+    Line[Form bilinear forms $h_j (bold(x), bold(y)) = chevron.l x^((j)), bold(x) chevron.r dot chevron.l y^((j)), bold(y) chevron.r$ for $j = 1, ..., t$.]
+    Line[Find $f in.not "span"{h_1, ..., h_t}$ with $f != 0$, non-negative, and not SOS (over $QQ$, by linear algebra).]
+    Line[Solve the SDP: find the smallest $delta > 0$ such that $F_delta = delta f + sum_j h_j^2 >= 0$.]
   },
 ) <kmsz>
 
-The first three steps are purely linear algebra, and the last step is a semidefinite program, which we will describe in more detail later. The resulting polynomial $F_delta$ is non-negative and non-SOS, so the corresponding map is positive but not completely positive @Klep_2017.
+Steps 1--3 involve only linear algebra over $QQ$ and produce rational $h_j$, $f$. The map $F_delta$ is non-negative by construction and non-SOS because $f$ contributes a non-SOS term, so the corresponding map is PNCP @Klep_2017.
 
-=== Rationalization
-Steps 1-3 of @kmsz can be performed over $QQ$, leading to rational forms $h_j$, $f$. However in step 4 we need to solve an SDP to find a suitable $delta$. Any state-of-the-art solver will produce a floating-point solution. So instead of rationalizing the entire problem beforehand, we only rationalize the solution after solving the SDP.
+=== Rationalization <rationalization>
 
-The semidefinite programs arising from our SOS relaxations are feasibility problems of the form $ G succ.eq 0 \ s.t. space chevron A_i, G chevron.r = b_i, quad i = 1, ..., m $ where $A_i$, $b_i$ are obtained from the problem data.
+Since step 4 of @kmsz solves a floating-point SDP, $delta$ is only known numerically. To obtain an exact rational certificate we rationalize the Gram matrix post hoc. The SDP arising from the SOS relaxation is the feasibility problem
+$ G succ.eq 0, quad chevron.l A_i, G chevron.r = b_i, quad i = 1, ..., m, $
+with rational data $A_i$, $b_i$.
 
-Let $G$ be a positive definite feasible point satisfying $mu = min("eig"(G)) > ||(chevron A_i, G chevron.r) - b_i|| = epsilon$, then a rational feasible point $hat(G)$ can be obtained by computing a rational approximation $tilde(G)$ with $|| G - tilde(G) ||^2 + epsilon^2 <= mu^2$, then projecting it back to the affine space defined by the constraints $chevron A_i, G chevron.r = b_i$. 
-
-From our construction we know that each feasible $G$ will have at least an $e$-dimensional nullspace @Klep_2017. Therefore, we can create a rationalized $tilde(G) = mat(tilde(G)_11, tilde(G)_12; tilde(G)_12^T, tilde(G)_22)$, where we set $tilde(G)_11$ and $tilde(G)_12$ are both equal to $0$, then rationalize the remaining coefficients $tilde(G)_22$. Finally we run an additional feasibility SDP to verify $tilde(G) succ.eq 0$.
+Let $G$ be a numerical solution with $mu = min "eig"(G) > 0$ and residual $epsilon = max_i |chevron.l A_i, G chevron.r - b_i|$. If $mu > epsilon$, a rational feasible $hat(G)$ is obtained by:
+1. Exploiting the known $e$-dimensional nullspace @Klep_2017: set the corresponding blocks $tilde(G)_11 = 0$, $tilde(G)_12 = 0$.
+2. Rationalize the remaining block $tilde(G)_22$ using continued fractions.
+3. Project back to the affine constraint space $chevron.l A_i, G chevron.r = b_i$.
+4. Verify $hat(G) succ.eq 0$ by a final rational feasibility SDP.
 
 == PPT2 Conjecture
+
 #theorem(name: "PPT2 Conjecture")[
-  Given a PPT map $phi$, the composition $phi compose phi$ is separable.@Christandl_2019
+  If $Phi_1$ and $Phi_2$ are PPT maps, then $Phi_1 compose Phi_2$ is entanglement breaking @Christandl_2019.
 ]<ppt2>
 
-Equivalently to @ppt2, if $phi_1$, $phi_2$ are two PPT maps, then $phi_1 compose phi_2$ is separable @Chen_2019.
+The conjecture is proven for $n = 2$ (trivially, since all PPT states are separable in that dimension), for $n = 3$ @Chen_2019, and for Choi-type maps in all dimensions @Singh_2022. It remains open for $n >= 4$ in the general case.
 
-= Methods
+= Methods <methods>
 This chapter defines the computational workflow used in the current implementation.
 
 #inline-note[Although channels are trace preserving by definition, the computational tests in this thesis are primarily positivity/sign based. Therefore, intermediate computations may use non-normalized maps, then normalize where needed for interpretation.]
