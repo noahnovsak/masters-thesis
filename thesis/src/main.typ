@@ -13,24 +13,16 @@
   title_sl: "Programski pristop k domnevi PPT2",
   author: "Noah Novšak",
   mentor: "doc. dr. Aljaž Zalar",
+  cosupervisor: "dr. Igor Klep",
+  keywords_en: "PPT2 conjecture, quantum entanglement, positive maps, semidefinite programming, bound entanglement",
+  keywords_sl: "domneva PPT2, kvantna prepletenost, pozitivne preslikave, semidefinitno programiranje, vezana prepletenost",
+  code_url: "https://github.com/noahnovsak/masters-thesis",
   abstract_en: [This thesis explores...],
   abstract_sl: [V tem delu raziskujemo...],
   extended_abstract_sl: [Daljši slovenski povzetek vsebine...],
 )
 
-#set heading(numbering: "1.1")
-#show heading: it =>[
-    #block(it.body)
-]
-//#show heading.where(level: 1): it =>[
-//    #block(it.body)
-//]
-
-#set math.equation(numbering: "(1)")
-
-#let (
-  theorem, remark, example, definition, proof, rules: thm-rules
-) = default-theorems("thm-group", lang: "en", thm-numbering: thm-numbering-linear)
+#let (theorem, definition, rules: thm-rules) = default-theorems("thm-group", lang: "en", thm-numbering: thm-numbering-linear)
 #show: thm-rules
 
 #let reference = margin-note("reference")
@@ -240,9 +232,9 @@ Here $Pi_k$ projects onto the bosonic (fully symmetric) subspace of $(CC^n)^(tim
 ]
 
 Each $"DPS"_n^k$ is defined by semidefinite constraints, so membership is testable in polynomial time for fixed $k$. The hierarchy satisfies @Doherty_2004:
-1. $S E P_n subset.eq "DPS"_n^k$ and $"DPS"_n^(k+1) subset.eq "DPS"_n^k$ for all $k >= 1$.
+1. $"SEP"_n subset.eq "DPS"_n^k$ and $"DPS"_n^(k+1) subset.eq "DPS"_n^k$ for all $k >= 1$.
 2. $"DPS"_n^1$ is equivalent to the PPT criterion.
-3. Asymptotic completeness: $inter.big_(k >= 1) "DPS"_n^k = S E P_n$.
+3. Asymptotic completeness: $inter.big_(k >= 1) "DPS"_n^k = "SEP"_n$.
 
 === Feasibility SDP and witness extraction
 
