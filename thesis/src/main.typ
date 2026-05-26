@@ -112,7 +112,7 @@ Under this isomorphism, $Phi$ is CP if and only if $C_Phi succ.eq 0$ @Choi_1975,
 
 Since $C_Phi succ.eq 0$ characterizes CP maps, a PPT map is a CP map whose Choi matrix has non-negative partial transpose. The composition of two PPT maps is trivially PPT.
 
-=== Map composition via Choi matrices
+=== Map composition via Choi matrices <map-comp>
 
 The Choi matrix of the composition $Phi compose Psi$ is not the product $C_Phi C_Psi$. Instead, it is obtained by applying the _ampliation_ $I_n times.o Phi$ to $C_Psi$:
 $ C_(Phi compose Psi) = (I_n times.o Phi)(C_Psi), $
@@ -308,41 +308,53 @@ Let $G$ be a numerical solution with $mu = min "eig"(G) > 0$ and residual $epsil
 Once $hat(G)$ is rationalized, the coefficients of $F_delta$ are extracted by subtracting the contribution of the SOS multiplier $S$ from $bold(v)^T hat(G) bold(v)$. A final SDP check verifies that the extracted polynomial is not SOS, confirming the PNCP certificate is exact. Because IPMs produce solutions in the strict interior, the gap $mu > epsilon$ holds with room to spare, making the rationalization robust in practice.
 
 = Methods <methods>
-This chapter defines the computational workflow used in the current implementation.
+This chapter defines the computational workflow used in the current implementation. The goal is reproducibility with mathematical traceability: each computational step corresponds to a defined object or operation from the preceding chapter.
 
-#inline-note[Although channels are trace preserving by definition, the computational tests in this thesis are primarily positivity/sign based. Therefore, intermediate computations may use non-normalized maps, then normalize where needed for interpretation.]
+A note on normalization is in order. A quantum state is conventionally a PSD operator with unit trace, and a quantum channel is trace preserving. The tests in this thesis are, however, positivity- and sign-based: detecting entanglement amounts to checking the sign of a partial transpose, a witness expectation, or an SOS margin, none of which depend on the trace. We therefore work throughout with unnormalized operators — equivalently, with the convex cones of PSD and of PPT matrices — and normalize only when a quantity must be interpreted as a physical state or channel. This avoids redundant rescaling in the inner loops without affecting any conclusion.
 
-#inline-note[A quantum state is usually represented by a positive semidefinite operator normalized with unit trace. In this work, we mainly work with unnormalized quantum states and consider its convex cone.]
+Two design constraints shape the workflow:
+1. separability testing is intractable in the dimensions where the conjecture is open (Section @dps-section), so every test is a one-sided relaxation;
+2. SDP solutions are floating-point and fragile near feasibility boundaries (Section @rationalization), so positive detections must be re-validated exactly.
 
-The goal is reproducibility with mathematical traceability: each code step corresponds to a defined object or operation from Chapter 2.
+== Generating PPT candidates
 
-Design constraints:
-1. separability testing difficulty in relevant dimensions,
-2. numerical fragility near SDP feasibility boundaries,
-
-== PPT Maps
+We generate PPT maps directly through their Choi matrices, exploiting a symmetry trick that makes the PPT property automatic.
 
 #algorithm-figure(
-  "Generating PPT maps",
+  "Generating a random PPT map",
   {
-    Line[Generate a matrix $R$ with entries sampled from a normal distribution.]
-    Line[$A = R^T R$ is a positive semidefinite matrix.]
-    Line[Optionally symmetrize each block of $A$ to ensure the resulting map is invariant under partial transpose.]
-    Line[Adjust the spectrum of $A$ to ensure the resulting map is PPT: $A_(P P T) = A - lambda I$, where $lambda < 0$ is the smallest eigenvalue of $A^Gamma$.]
+    Line[Sample a real matrix $R in M_(m n)$ with i.i.d. standard-normal entries and form the PSD matrix $rho = R R^T$.]
+    Line[Symmetrize the off-diagonal blocks: for each block pair $(i, j)$ with $i < j$, replace both $rho_(i j)$ and $rho_(j i)$ by their average $(rho_(i j) + rho_(j i)) slash 2$. This forces $rho$ to be invariant under partial transposition, $rho = rho^Gamma$.]
+    Line[Restore positivity: let $lambda = lambda_min (rho)$. If $lambda < 0$, set $rho <- rho - lambda I$. Because $rho = rho^Gamma$, the shift makes $rho succ.eq 0$ and $rho^Gamma succ.eq 0$ simultaneously, so $rho$ is PPT.]
   }
-)
+) <ppt-gen>
 
-== Composite maps and entanglement testing
-Compute Composite PPT maps from generated candidates and test with DPS and precomputed witnesses
+The symmetrization in step 2 is the key design choice. Recall that the partial transpose with respect to the first subsystem permutes the blocks, $rho_(i j) arrow.bar rho_(j i)$; forcing $rho_(i j) = rho_(j i)$ therefore makes $rho$ a fixed point of $Gamma$. A single positivity shift then certifies both $rho succ.eq 0$ and $rho^Gamma succ.eq 0$ at once, whereas a generic Choi matrix would require the two cones to be enforced independently. The Choi matrix of a map is in any case only defined up to the choice of basis convention, so restricting to the partial-transpose-invariant representatives is permissible — it is a convenience, not a requirement. The cost is that the resulting candidate is not guaranteed to be _entangled_: the construction samples the PPT cone, which contains both separable and bound entangled states, and the entanglement test in the next stage decides which.
+
+=== Alternative bound-entangled constructions
+
+The random sampling above is fast and almost always succeeds on the first try, but it offers no guarantee that a given candidate is entangled rather than separable. Several constructions in the literature instead produce bound entangled (PPT and entangled) states by design; we did not use them in the search, for the reasons noted below, but they are the natural starting points for a more structured candidate generation (cf. limitation 5 in @complexity-limits).
+
+- *Unextendible product bases (UPB).* A UPB is a set of mutually orthogonal product vectors spanning a proper subspace whose orthogonal complement contains no product vector. The normalized projector onto that complement is PPT yet entangled @Bennett_1999. UPBs give explicit, low-rank bound entangled states, but constructing them in a given dimension is itself a combinatorial problem and yields a limited, non-generic family.
+- *Antisymmetric-subspace states.* Sindici and Piani construct a simple class of PPT entangled states from the projectors onto the symmetric and antisymmetric subspaces of two identical systems, generalizing the Werner states @Sindici_2018. The construction is explicit, but certifying entanglement of the resulting states still reduces to an SDP, so it does not scale better than our pipeline.
+- *Symmetric random induced states.* More recently, Louvet, Damanet, and Bastin study bound entanglement in symmetric random induced states and show it arises with near-certain probability in suitable regimes @Louvet_2025. This is a promising state-of-the-art source of bound entangled candidates and a useful point of comparison for future work.
+
+== Composing maps and testing for entanglement
+
+Given two PPT candidates $Phi_1$, $Phi_2$, we form the Choi matrix of their composition using the ampliation operation of Section @map-comp, $C_(Phi_1 compose Phi_2) = (I_n times.o Phi_1)(C_(Phi_2))$, rather than any matrix product. We then test the composite for entanglement: if it is ever found to be entangled, the PPT2 conjecture is violated.
 
 #algorithm-figure(
-  "Randomized PPT Composition + DPS",
+  "Randomized PPT composition and entanglement test",
   {
-    Line[Generate random PPT maps $Phi_1$, $Phi_2$ using the method described above.]
-    Line[Compute the Choi matrix of the composition $C_(Phi_1 compose Phi_2)$ using the ampliation operation.]
-    Line[Test the resulting state for entanglement using DPS hierarchy and/or precomputed witnesses.]
+    Line[Generate random PPT maps $Phi_1$, $Phi_2$ via @ppt-gen.]
+    Line[Form the composite Choi matrix $C_(Phi_1 compose Phi_2) = (I_n times.o Phi_1)(C_(Phi_2))$ by ampliation.]
+    Line[Screen the composite against the precomputed witness library: for each witness $W$, evaluate the scalar test $"Tr"[W C] < 0$ and the stronger map test $(I times.o Phi_W)(C) succ.eq.not 0$.]
+    Line[If no witness fires, run the level-$2$ DPS relaxation (Section @dps-section); a feasible dual certificate flags entanglement.]
+    Line[Report any entangled composite for exact re-validation (Section @rationalization).]
   },
 )
+
+The witness library and the DPS test are complementary: precomputed witnesses are cheap to evaluate but detect only the entanglement they were built for, whereas the DPS relaxation is general but far more expensive. Screening with witnesses first lets the expensive relaxation run only on the survivors.
 
 == Performance
 Our performance gains stem from many factors. The MATLAB implementation originally generated random integer matrices to produce nicer results, but the downside is that this aproach is not random enough, and often failed. Resulting in a single candidate requiring many recomputation attempts. The Julia implementation allws for such candidate generation, but with speed in mind we opted for the more reliable approach of sampling from a normal distribution, which is far more likely to produce a valid candidate on the first try. While the solver's performance is generally independent of the language, the Julia implementation benefits from more efficient data handling and better integration with the solver, leading to faster overall runtimes. Additionally the rationalization steps in MATLAB are noticeably more expensive, both due to the overhead of rational arithmetic and the choice to rationalize the entire problem beforehand, while in Julia we only rationalize the solution after solving the SDP. All this to say, direct comparison between implementations is somewhat difficult and arguably pointless. It would be like comapring apples to oranges. With that in mind we present some rough performance numbers for the current implementation: #margin-note[Add performance numbers], The previous implementation was made with other goals in mind, but producing candidates for the same dimensions took orders of magnitude more time: #margin-note[MATLAB perf computed/from article].
@@ -350,16 +362,60 @@ Our performance gains stem from many factors. The MATLAB implementation original
 == Rationalization and Certificate Validation
 Our constructions are intrinsically numerical, and the resulting maps are represented as floating-point matrices. This is sufficient for quick tests and exploration, but numerical noise can lead to false positives near the boundary of positivity. Therefore, we apply a post-solver rationalization and re-validation step to confirm any positive detections.
 
-The rationalization as explained previously is implemented in the `_fix_gram` function and works as follows:
-1. Extract Gram matrix $G$ from constraints of the SDP $(delta f + h^2)(sum x_i^2 y_j^2)^l = bold(x)^T bold(y)^T G bold(y) bold(x)$.
-2. Compute eigendecomposition of $G$, set the first $e$ eigenvalues equal to zero, and rationalize the remaining coefficients to obtain $tilde(G)$.
-3. Reformulating the constraints in terms of $tilde(G)$, isolate the coefficients of polynomial $hat(p) = delta f + h^2$ from the relaxation terms $(sum x_i^2 y_j^2)^l$.
-4. Solve another feasibility SDP to verify $hat(p)$ is not a sum of squares.
+The rationalization, developed in Section @rationalization, proceeds as follows:
+1. Extract the Gram matrix $G$ from the SDP constraints, $(delta f + h^2)(sum x_i^2 y_j^2)^l = bold(x)^T bold(y)^T G bold(y) bold(x)$.
+2. Eigendecompose $G$, set the first $e = (n-1)(m-1) + 1$ eigenvalues to zero, and rationalize the remaining coefficients to obtain $tilde(G)$.
+3. Reformulating the constraints in terms of $tilde(G)$, isolate the coefficients of the polynomial $hat(p) = delta f + h^2$ from the relaxation terms $(sum x_i^2 y_j^2)^l$.
+4. Solve a final feasibility SDP to verify that $hat(p)$ is _not_ a sum of squares, confirming the certificate is exact.
+
+== The complete pipeline
+
+The components above assemble into a single search loop. The witness library is built once, offline, via the KMSZ construction (@kmsz): each non-decomposable PNCP map is generated, rationalized, and stored. The main loop then samples PPT compositions and screens them against this library before falling back to the more expensive DPS relaxation, re-validating any detection exactly before it is reported.
+
+#algorithm-figure(
+  "PPT2 counterexample search",
+  {
+    Comment[Offline: build the witness library]
+    For($i = 1, ..., N_W$, {
+      Line[Construct a non-decomposable PNCP map via @kmsz and rationalize its certificate (Section @rationalization).]
+      Line[Store the resulting witness $W_i$.]
+    })
+    Comment[Online: search for a counterexample]
+    For($j = 1, ..., N_C$, {
+      Line[Generate PPT maps $Phi_1, Phi_2$ via @ppt-gen.]
+      Line[Form $C = (I_n times.o Phi_1)(C_(Phi_2))$ by ampliation.]
+      Line[If $"Tr"[W_i C] < 0$ or $(I times.o Phi_(W_i))(C) succ.eq.not 0$ for some stored $W_i$, mark $C$ entangled.]
+      Line[Else run the level-$2$ DPS relaxation; an infeasible primal (feasible dual certificate) marks $C$ entangled.]
+      Line[If $C$ is entangled, re-validate exactly and export the certificate — a counterexample to the PPT2 conjecture.]
+    })
+  },
+) <pipeline>
+
+In our experiments no online iteration ever produced an entangled composite; the loop terminates after exhausting its candidate budget without a counterexample (@results-section).
 
 == Implementation Architecture
-The active implementation is in the `code` directory, centered on `code/src/ppt2.jl`. #inline-note[details on code architecture - main stuff in src folder, additional scripts for reproducibility, experiments notebooks, dependencie - general julia stuff, any JuMP compatible solvers, Ket as existing quantum toolbox, and usage instructions]
 
-== Complexity and Practical Limits
+The implementation is a small Julia package in the `code/` directory, with the core logic in the `ppt2` module (`code/src/ppt2.jl`). The module maps one-to-one onto the operations defined above:
+
+#table(
+  columns: 2,
+  align: (left, left),
+  stroke: none,
+  table.header([*Function*], [*Role in the workflow*]),
+  table.hline(),
+  [`rand_ppt`], [Sample a random PPT map (@ppt-gen): block symmetrization plus the positivity shift.],
+  [`ampliation`], [Compute $(I times.o Phi)(C)$ — used both to compose maps and to apply a witness as the stronger map test.],
+  [`gen_pncp`, `kernel_basis`, `quadratic_form`], [The KMSZ construction (@kmsz): sample Segre-variety points, build the linear forms $h_j$, and produce the non-SOS quadratic form $f$.],
+  [`solve_sos`], [Set up and solve the SOS feasibility/optimization SDP for a given relaxation degree $l$; optionally trigger rationalization.],
+  [`_fix_gram`], [Post-solver rationalization (@rationalization): zero the first $(n-1)(m-1)+1$ Gram eigenvalues, recover rational coefficients, and re-check non-SOS.],
+  [`pncp_poly`, `pncp_mat`, `poly2mat`], [Orchestrate witness generation with retries and export the certificate as a matrix.],
+)
+
+The package leans on the established Julia optimization and quantum-information stack rather than reimplementing it. Polynomials and the SOS cone are handled by `DynamicPolynomials` and `SumOfSquares`; the resulting semidefinite programs are modelled with `JuMP` and solved by `MOSEK` through `MosekTools` (any JuMP-compatible SDP solver could be substituted). The DPS hierarchy is not reimplemented: the search driver calls `entanglement_robustness` from `Ket`, an existing quantum-information toolbox that also supplies utilities such as the partial transpose. Matrices and witness libraries are serialized with `JLD2` so that generation and search can be separated and resumed.
+
+Two command-line drivers in `code/experiments/` orchestrate the long-running jobs: `generate_forms.jl` builds and checkpoints batches of PNCP witnesses into a `pncp_forms_NxM.jld2` file, and `test_ppt2.jl` runs the threaded counterexample search of @pipeline against a precomputed library, logging any detection together with the offending state and witness. The `code/test/` suite (`reproduce_results.jl`, `positive_map.jl`) checks the construction against hardcoded reference values and verifies generated maps are positive on large random samples, and the `code/experiments/` notebooks document the rationalization and PPT-state-construction workflows interactively.
+
+== Complexity and Practical Limits <complexity-limits>
 All the problems we are looking at are SDPs with exponential @Gharibian_2009 complexity in dimension and relaxation depth @Doherty_2004. Practical bottlenecks are:
 1. processing power: these problems are by nature not easily parallelizable, simplex methods are intrinsically sequential and internal point methods rely on factoring large _sparse_ matrices, so the potential of GPU speedups is fairly low. 
 2. memory growth: the size of the SDP grows exponentially with dimension and relaxation depth, leading to memory bottlenecks even for moderate dimensions, i.e. for $4 times 4$ states DPS level 3 is already infeasible on standard hardware, requiring hundreds of gigabytes of RAM. Even improvements such as adding KKT constraints to achieve finite convergence @Harrow_2017 lead to significant increases in problem size, so they are not without cost.
@@ -367,7 +423,7 @@ All the problems we are looking at are SDPs with exponential @Gharibian_2009 com
 4. Generated entanglement witnesses are not guaranteed to be optimal, there has been research on finding optimal witnesses @Lewenstein_2000, but this only applies to specific cases, so it remains open, how our witnesses can be improved. In fact many of our witnesses may even be decomposable, which would make them unable to detect PPT-entangled states @Horodecki_2009.
 5. Searching for PPT candidates in the first place is non-trivial, and random generation may not be sufficient to find counterexamples if they exist. We may require a more structured approach if the volume of the search space is in fact 0 (this would not mean the conjecture holds).
 
-= Experimental Evaluation
+= Experimental Evaluation <results-section>
 This section summarizes computational results from the pipeline implementations.
 
 == Computational Results
