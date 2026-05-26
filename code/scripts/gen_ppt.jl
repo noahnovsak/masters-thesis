@@ -7,13 +7,6 @@ using ArgParse
 using Ket
 using MosekTools
 
-function sample_random_ppt(n, m; rng=Random.GLOBAL_RNG)
-    if isdefined(ppt2, :ran_ppt)
-        return getfield(ppt2, :ran_ppt)(n, m; rng=rng)
-    end
-    return rand_ppt(n, m; rng=rng)
-end
-
 function _parse_args()
     s = ArgParseSettings()
     @add_arg_table! s begin
@@ -119,7 +112,7 @@ function generate(total_states, batch_size, n, m, tol, filename)
         while batch_accepted < batch_size
             batch_attempted += 1
             rng_i = Xoshiro((batch_id - 1) * 10^7 + batch_attempted)
-            state = sample_random_ppt(n, m; rng=rng_i)
+            state = rand_ppt(n, m; rng=rng_i)
             robustness, _ = entanglement_robustness(state, [n, m], 2; solver=Mosek.Optimizer)
 
             if robustness > tol
