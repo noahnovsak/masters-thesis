@@ -11,7 +11,7 @@
   abstract_sl: [],
   extended_abstract_sl: [],
   acronyms: none,
-  acknowledgements: [I would like to thank...],
+  acknowledgements: none,
   dedication: none,
   code_url: none,
   body,
@@ -144,14 +144,14 @@
   pagebreak()
 
   // --- ACKNOWLEDGEMENTS ---
-  {
+  if acknowledgements != none {
     align(center, text(size: 16pt, weight: "bold", smallcaps[Acknowledgements]))
     v(0.8cm)
     emph(acknowledgements)
     v(0.8cm)
     align(right, emph[#author, #str(year)])
+    pagebreak()
   }
-  pagebreak()
 
   // --- DEDICATION (optional) ---
   if dedication != none {

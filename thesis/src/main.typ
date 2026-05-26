@@ -25,6 +25,7 @@
 #let (theorem, definition, rules: thm-rules) = default-theorems("thm-group", lang: "en", thm-numbering: thm-numbering-linear)
 #show: thm-rules
 
+#let margin-note = margin-note.with(dy: 0pt)
 #let reference = margin-note("reference")
 #let PPT2 = $"PPT"^2$
 
