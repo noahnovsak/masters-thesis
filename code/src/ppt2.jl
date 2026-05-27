@@ -61,18 +61,40 @@ end
 # ── Map composition ───────────────────────────────────────────────────────────
 
 """
-Computes (I ⊗ A)(B)
+    ampliation(A, B, n, m) -> Matrix
+
+Choi matrix of a map composition, computed as `(I_n ⊗ Φ_A)(B) = J(Φ_A ∘ Φ_B)`.
+
+`B = J(Φ_B)` is the Choi matrix of `Φ_B : M_n → M_m`, an `(n·m)×(n·m)` matrix in
+the `[n, m] = kron(A_n, B_m)` ordering. `Φ_A` is applied to the second
+(dimension-`m`) subsystem, so `A = J(Φ_A)` is the Choi matrix of
+`Φ_A : M_m → M_r`, an `(m·r)×(m·r)` matrix in `[m, r]` ordering; the output
+dimension `r = size(A, 1) ÷ m` is inferred. The result is
+`J(Φ_A ∘ Φ_B) : M_n → M_r`, an `(n·r)×(n·r)` matrix in `[n, r]` ordering.
+
+Rectangular dimensions are supported as long as the shared dimension `m`
+(`Φ_B`'s output and `Φ_A`'s input) matches — that is what makes the maps
+composable. The PPT² search uses the square self-composition
+`ampliation(M, M, d, d)` (`n = m = r = d`).
 """
 function ampliation(A::AbstractMatrix, B::AbstractMatrix, n::Int, m::Int)
-    Ap = PermutedDimsArray(reshape(A, m, n, m, n), (1, 3, 2, 4))
+    size(B, 1) == n * m || throw(DimensionMismatch(
+        "B must be $(n*m)×$(n*m) for Φ_B: M_$n → M_$m, got $(size(B, 1))×$(size(B, 2))"))
+    size(A, 1) % m == 0 || throw(DimensionMismatch(
+        "A's dimension $(size(A, 1)) is not a multiple of m=$m (Φ_A's input)"))
+    r = size(A, 1) ÷ m
+
+    # gather B into blocks of its second (m) subsystem: Bmat[(a,b), (α,β)]
     Bp = PermutedDimsArray(reshape(B, m, n, m, n), (1, 3, 2, 4))
+    Bmat = reshape(Bp, m*m, n*n)
 
-    Ar = reshape(Ap, m*m, n*n)
-    Br = reshape(Bp, n*n, n*n)
+    # natural representation of Φ_A: natA[(k,l), (a,b)] = A[(a,k), (b,l)]
+    Ap = PermutedDimsArray(reshape(A, r, m, r, m), (1, 3, 2, 4))
+    natA = reshape(Ap, r*r, m*m)
 
-    Cr = reshape(Ar * Br, m, m, n, n)
+    C = reshape(natA * Bmat, r, r, n, n)            # (k, l, α, β)
 
-    return reshape(PermutedDimsArray(Cr, (1, 3, 2, 4)), n*m, n*m)
+    return reshape(PermutedDimsArray(C, (1, 3, 2, 4)), n*r, n*r)
 end
 
 # ── Random states ──────────────────────────────────────────────────────────────
@@ -80,16 +102,19 @@ end
 """
     rand_ppt(n, m; rng, rand_vec) -> Matrix
 
-Random PPT state: a random PSD matrix whose off-diagonal n×n blocks are
-symmetrised (so the partial transpose stays PSD), shifted to be PSD if needed.
-Pass a custom `rand_vec` to control the entry distribution (e.g. integer entries).
+Random PPT state on the `[n, m] = kron(A_n, B_m)` bipartition (the same ordering
+as `rand_sep`, `is_ppt`, and `Ket`). A random PSD matrix whose off-diagonal
+m×m blocks (the blocks of the first, dimension-n subsystem) are symmetrised, so
+the partial transpose over either subsystem stays PSD; shifted to be PSD if
+needed. Pass a custom `rand_vec` to control the entry distribution (e.g. integer
+entries).
 """
 function rand_ppt(n::Int, m::Int; rng=Random.GLOBAL_RNG, rand_vec=rand_vec)
     A = rand_vec(n*m, n*m; rng=rng)
     rho = A * A'
-    for i in 1:m, j in i+1:m
-        rows = (i - 1) * n + 1:i * n
-        cols = (j - 1) * n + 1:j * n
+    for i in 1:n, j in i+1:n
+        rows = (i - 1) * m + 1:i * m
+        cols = (j - 1) * m + 1:j * m
         sym = (rho[rows, cols] + rho[cols, rows]) / 2
         rho[rows, cols] = sym
         rho[cols, rows] = sym

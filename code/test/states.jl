@@ -42,9 +42,10 @@ end
         @test size(ρ) == (n * m, n * m)
         @test issym(ρ)
         @test ispsd(ρ)
-        # rand_ppt symmetrises the m×m block structure (blocks of size n), so the
-        # partial transpose stays PSD under the [m, n] bipartition.
-        @test is_ppt(ρ, m, n)
+        # rand_ppt is PPT under the same [n, m] = kron(A_n, B_m) bipartition as
+        # rand_sep / is_ppt / Ket. The rectangular case is the discriminating one:
+        # it fails if the block structure is built for the [m, n] ordering instead.
+        @test is_ppt(ρ, n, m)
     end
 end
 

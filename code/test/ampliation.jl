@@ -23,3 +23,27 @@ end
         @test isapprox(ampliation(M, M, d, d), choi_composition(M, M, d), rtol=1e-10)
     end
 end
+
+# General (rectangular) link product for J(Φ_A ∘ Φ_B):
+#   Φ_B: M_n → M_m  (B on systems 1,2),  Φ_A: M_m → M_r  (A on systems 3,4),
+# linked over the shared m-system by |e⟩⟨e|, |e⟩ = Σ_i |i⟩⊗|i⟩ ∈ C^m ⊗ C^m.
+function choi_composition(A, B, n, m, r)
+    e = sum(kron(ket(i, m), ket(i, m)) for i in 1:m)
+    M = kron(B, A) * kron(I(n), kron(e * e', I(r)))
+    return partial_trace(M, [2, 3], [n, m, m, r])
+end
+
+@testset "ampliation: rectangular composition" begin
+    for (n, m, r) in ((2, 3, 4), (3, 2, 2), (2, 4, 3), (4, 2, 3), (3, 3, 2))
+        B = randn(n*m, n*m)        # J(Φ_B): M_n → M_m
+        A = randn(m*r, m*r)        # J(Φ_A): M_m → M_r
+        C = ampliation(A, B, n, m)
+        @test size(C) == (n*r, n*r)
+        @test isapprox(C, choi_composition(A, B, n, m, r), rtol=1e-9)
+    end
+end
+
+@testset "ampliation: dimension checks" begin
+    @test_throws DimensionMismatch ampliation(randn(6, 6), randn(6, 6), 2, 2)  # B not (n·m)²
+    @test_throws DimensionMismatch ampliation(randn(5, 5), randn(6, 6), 2, 3)  # size(A) ∤ m
+end

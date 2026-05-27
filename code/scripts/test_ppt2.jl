@@ -41,9 +41,9 @@ function _parse_args()
     return parse_args(s)
 end
 
-function log_detection(logger, lock, i, j, composite, robustness, min_dot, min_amp)
+function log_detection(logger, lock, i, j, n, m, composite, robustness, min_dot, min_amp)
     eigmin_rho = eigmin(composite)
-    eigmin_pt = eigmin(partial_transpose(composite, 2))
+    eigmin_pt = eigmin(partial_transpose(composite, 2, [n, m]))
     Base.lock(lock) do
         with_logger(logger) do
             @info "Entanglement detected" i j eigmin_rho eigmin_pt robustness min_dot min_amp
@@ -80,7 +80,7 @@ function test_ppt2(n, m, forms, states, tol, output_dir, logger)
         ro, wit = entanglement_robustness(composite, [n, m], 2; solver = Mosek.Optimizer)
 
         if ro > tol || trc < -tol || amp < -tol
-            log_detection(logger, log_lock, i, j, composite, ro, trc, amp)
+            log_detection(logger, log_lock, i, j, n, m, composite, ro, trc, amp)
             save_result(output_dir, i, j, composite, wit, trc_i, forms[trc_i], amp_i, forms[amp_i])
         end
     end
