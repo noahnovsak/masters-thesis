@@ -3,8 +3,9 @@
 # Include once at the top of a notebook with `include("common.jl")`.
 # Method-specific generators (UPB search, antisymmetric-subspace SDP) live in
 # their own notebooks; this file holds the pieces that were being copy-pasted
-# between several of them: the PPT2 detection driver, form quality-control,
-# the random-state zoo, and a few small projectors.
+# between several of them: the PPT2 detection driver and form quality-control.
+# General primitives (random states, (anti)symmetric projectors, the PPT check)
+# live in the `ppt2` library.
 
 using Random
 using LinearAlgebra
@@ -14,7 +15,7 @@ using Ket
 using JLD2
 using ProgressMeter
 
-using ppt2   # gen_pncp, pncp_mat, solve_sos, ampliation, rand_ppt, ...
+using ppt2   # pncp_mat, ampliation, rand_ppt, rand_sep, rand_psd, is_ppt, antisymmetric_projector, ...
 
 # ── Loading precomputed PNCP forms ────────────────────────────────────────────
 
@@ -29,45 +30,11 @@ function load_forms(path::AbstractString)
     end
 end
 
-# ── Random-state zoo ──────────────────────────────────────────────────────────
-#
-# `rand_ppt` itself lives in the `ppt2` library and is the canonical generator.
-# To sample PPT states with integer entries (as in the old `gen_ppt` notebook),
-# pass a custom sampler, e.g.
+# The random-state generators `rand_ppt`, `rand_sep`, and `rand_psd` live in the
+# `ppt2` library. To sample PPT states with integer entries (as in the old
+# `gen_ppt` notebook), pass a custom sampler, e.g.
 #
 #     rand_ppt(n, m; rand_vec = (d...; rng) -> float(rand(rng, -1:1, d...)))
-
-"""Separable state: sum of `n_terms` random product projectors |a⟩⟨a|⊗|b⟩⟨b|."""
-function rand_sep(n::Int, m::Int; n_terms::Int=2, rng=Random.GLOBAL_RNG)
-    rho = zeros(n * m, n * m)
-    for _ in 1:n_terms
-        a = randn(rng, n)
-        b = randn(rng, m)
-        rho += kron(a * a', b * b')
-    end
-    return rho
-end
-
-"""Random PSD matrix of rank `r` (full rank when `r == 0`)."""
-function rand_psd(n::Int, m::Int; r::Int=0, rng=Random.GLOBAL_RNG)
-    d = n * m
-    r = r > 0 ? r : d
-    rho = zeros(d, d)
-    for _ in 1:r
-        psi = randn(rng, d)
-        rho += psi * psi'
-    end
-    return rho
-end
-
-"""Haar-random unitary of size `n` via QR with phase correction."""
-function random_unitary(n::Int; rng=Random.GLOBAL_RNG)
-    X = (randn(rng, n, n) .+ im * randn(rng, n, n)) ./ sqrt(2)
-    F = qr(X)
-    Q = Matrix(F.Q)
-    phases = [iszero(F.R[i, i]) ? 1.0 + 0im : F.R[i, i] / abs(F.R[i, i]) for i in 1:n]
-    return Q * Diagonal(phases)
-end
 
 # ── A known 3⊗3 bound-entangled example ───────────────────────────────────────
 
@@ -101,26 +68,6 @@ function B(d::Int)
         b[k, end - k + 1] = (-1)^k
     end
     return b
-end
-
-# ── Symmetric / antisymmetric subspace projectors ─────────────────────────────
-
-"""Swap operator on C^d ⊗ C^d."""
-function swap(d::Int)
-    V = zeros(d, d, d, d)
-    for i in 1:d, j in 1:d
-        V[j, i, i, j] = 1.0
-    end
-    return reshape(V, d^2, d^2)
-end
-
-symmetric_projector(d::Int)     = (I(d^2) + swap(d)) / 2
-antisymmetric_projector(d::Int) = (I(d^2) - swap(d)) / 2
-
-"""True if ρ is PPT (partial transpose has no eigenvalue below `-tol`)."""
-function is_ppt(ρ::AbstractMatrix, dA::Int, dB::Int; tol=1e-8)
-    PT = partial_transpose(Matrix(ρ), 2, [dA, dB])
-    return eigmin(Hermitian(PT)) ≥ -tol
 end
 
 # ── PNCP form quality control ─────────────────────────────────────────────────
