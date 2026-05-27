@@ -88,11 +88,40 @@ witness, and best detecting forms are written to `result_<i>_<j>.jld2`.
 | `--forms`, `-f` | `pncp_NxM.jld2` | pre-generated PnCP forms |
 | `--output-dir`, `-o` | `.` | directory for results and the run log |
 
+### `compare_detection.jl`
+
+Compares the efficacy of the two entanglement-detection methods — PnCP witness
+maps vs. the DPS hierarchy — on random PPT states. Like `gen_ppt.jl` it samples
+random PPT states, but it runs **every** criterion on each state and keeps any
+state that at least one criterion flags, recording each criterion's raw score:
+the minimum `tr(form · state)` and minimum eigenvalue of `(I⊗form)(state)` over
+the form library (the two PnCP criteria), and the level-`--level` DPS robustness.
+After generating it prints a per-criterion breakdown (including DPS-only,
+PnCP-only, and overlap counts) so the methods can be compared directly. Requires
+a pre-generated PnCP form library (`gen_pncp.jl`).
+
+```sh
+julia --project=. -t auto scripts/compare_detection.jl --total 1000 --batch 200 -n 4 -m 4
+```
+
+| option | default | meaning |
+| --- | --- | --- |
+| `--total`, `-t` | 1000 | detected entangled states to keep |
+| `--batch`, `-b` | 200 | states per batch |
+| `--dim_A`, `-n` | 4 | dimension of subspace A |
+| `--dim_B`, `-m` | 4 | dimension of subspace B |
+| `--level`, `-l` | 2 | DPS hierarchy level |
+| `--tol` | 1e-8 | detection tolerance |
+| `--forms`, `-f` | `pncp_NxM.jld2` | pre-generated PnCP forms |
+| `--output`, `-o` | `detection_NxM.jld2` | output file |
+
 ## Output format
 
 Generated `.jld2` files store data under `batch_<id>` keys and statistics under
 `meta/*` (`dim_A`, `dim_B`, `tol`, and per-batch `batch_<id>_attempted` /
-`batch_<id>_accepted` counts).
+`batch_<id>_accepted` counts). The generators store a `Vector{Matrix}` per
+batch; `compare_detection.jl` stores a `Vector` of named tuples
+`(state, robustness, min_dot, min_amp, dot_idx, amp_idx)` instead.
 
 ## Resumability and reproducibility
 
