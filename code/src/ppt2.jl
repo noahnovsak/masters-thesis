@@ -109,17 +109,19 @@ the partial transpose over either subsystem stays PSD; shifted to be PSD if
 needed. Pass a custom `rand_vec` to control the entry distribution (e.g. integer
 entries).
 """
-function rand_ppt(n::Int, m::Int; rng=Random.GLOBAL_RNG, rand_vec=rand_vec)
+function rand_ppt(n::Int, m::Int; rng=Random.GLOBAL_RNG, rand_vec=rand_vec, ppt_invariant=false)
     A = rand_vec(n*m, n*m; rng=rng)
     rho = A * A'
-    for i in 1:n, j in i+1:n
-        rows = (i - 1) * m + 1:i * m
-        cols = (j - 1) * m + 1:j * m
-        sym = (rho[rows, cols] + rho[cols, rows]) / 2
-        rho[rows, cols] = sym
-        rho[cols, rows] = sym
+    if ppt_invariant
+        for i in 1:n, j in i+1:n
+            rows = (i - 1) * m + 1:i * m
+            cols = (j - 1) * m + 1:j * m
+            sym = (rho[rows, cols] + rho[cols, rows]) / 2
+            rho[rows, cols] = sym
+            rho[cols, rows] = sym
+        end
     end
-    delta = eigmin(rho)
+    delta = eigmin(partial_transpose(rho, 2, [n, m]))
     if delta < 0
         return rho - delta * I
     end
