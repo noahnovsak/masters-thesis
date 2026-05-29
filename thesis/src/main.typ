@@ -31,19 +31,22 @@
 #let PPT2 = $"PPT"^2$
 
 = TODO <todo>
-- [ ] write introduction - what is entanglement, how do we use it, what is the PPT2 conjecture and why it matters, what are its implications if true or false. Current state of knowledge i.e. known results for $n<=3$ expectations for $n>=4$, testing entanglement is hard...
-- [ ] generating PPT candidates, 1. start with psd matrices $A A^T$ (optionally symmetrize) and add smallest eigenvalue of partial transpose on diagonal to ensure PPT - the downside here is that the state may not be entangled, 2. use unextendible product bases (UPB) - this should guarantee bound entanglement, i.e. PPT and entangled, requires references to UPB papers and some explanation
-- [ ] A note on composition calculation; not as straightforward as multiplying matrices, needs the Choi-Jamiolkowski transformation so that we can work with matrices, define _ampliation_ $(I times.o C_Phi)(C_Psi)$ which we use to compute the Choi matrix of the composition, as well check entanglement 
-- [ ] DPS-based entanglement detection, describe hierarchy, SDPs in general, witness extraction for comparison later, extensions of DPS, i.e. adding KKT constraints, our code uses existing implementations (cite Ket library)
-- [ ] Abhisheks PnCP map generation method, describe in more detail what it does and how it works, Julia implementation does rationalization differently for performance reasons, i.e. only after computing SDP, explain why this still works, get matlab and julia performance numbers to compare, explain how the matrix representation is chosen for each map (not unique), chosen to be invariant to partial transpose, but doesn't need to be - discussion
-- [ ] get references for all statements, known results, methods, etc.
-- [ ] write out entire algorithm/pipeline - loop: 1. generate candidate(s), 2. compute composition, 3. test for entanglement (using DPS and/or precomputed witnesses), 4. if candidate is entangled, rationalize and retest to confirm, 5. if confirmed, export certificate and stop
-- [ ] results: no counterexamples found on 10000 random candidates, in 4x4 this takes about five hours to verify using DPS level 2 and a collection of 10000 precomputed witnesses
-- [ ] issues with generated entanglement witnesses: almost surely not optimal, possibly even decomposable, so probably fails to detect most entangled states
-- [ ] issues with DPS: numerical instability, only lower levels of hierarchy are computationally feasible
-- [ ] required sections: 1. introduction - explains entanglement, PPT2 conjecture 2. theoretical background - required formalism: positivity, complete positivity, entanglement, partial transpose, quantum states/channels, entanglement witnesses, DPS hierarchy, semidefinite programming, Choi representation, maps/matrices/operators 3. methods - generating candidates, why we can't use known constructions, compositions, testing entanglement via DPS and witnesses, generating witnesses via PNCP maps, post-solver numerical validation, performance notes 4. results/discussion/conclusion - TBD
+*Writing*
+- [ ] Write the abstracts: English, Slovene, and the extended Slovene summary.
+- [ ] Polish the Introduction: spell out the implications of the conjecture holding versus failing, and sharpen the statement of current knowledge ($n <= 3$ proven, $n >= 4$ open).
+- [ ] Expand the Conclusion into a genuine discussion: the Gram-representation freedom, the inertness of the symmetric (partial transpose invariant) family, the limitations, and the outlook.
 
-#inline-note[careful with "improvements" on the DPS hierarchy; some of them work only for specific types of states i.e. diagonal unitary invariant states, for which the #PPT2 conjecture has already been proven]
+*Results* (pending)
+- [ ] Finalize the PPT2 search results (Section @results-section): final candidates and witnesses, hardware, wall-clock, and outcome.
+- [ ] Fill in the performance numbers in the Performance section: Julia generation timings and the MATLAB-prototype comparison.
+
+*Figures and references*
+- [ ] Add the flagged figures: the separable set with a witness hyperplane, maybe a schematic of the pipeline.
+- [ ] Complete and verify all citations: resolve the remaining reference placeholders and margin notes.
+
+*Open questions / future work*
+- [ ] Investigate the complex-domain extension of the asymmetric witnesses (Sections @gram-freedom, @witness-findings): block-positivity over $CC$ fails, how to fix it.
+- [ ] Consider structured candidate generation (UPB or symmetric random induced states) should the random search volume prove effectively zero (cf. limitation 5 in @complexity-limits).
 
 = Introduction <intro>
 Quantum entanglement is a central nonclassical resource in quantum information theory. It supports communication and cryptographic tasks and provides a structural lens for understanding quantum channels @Horodecki_2009.
@@ -184,7 +187,11 @@ Witnesses are one-sided: $"Tr"[W rho] < 0$ certifies entanglement, but $"Tr"[W r
 
 Decomposable witnesses cannot detect PPT entangled states: for any PPT $sigma$, $"Tr"[(P + Q^Gamma) sigma] = "Tr"[P sigma] + "Tr"[Q sigma^Gamma] >= 0$. Only non-decomposable witnesses are useful for our purposes.
 
-Under the Choi-Jamiolkowski isomorphism, every entanglement witness $W = C_Phi$ corresponds to a PNCP map $Phi$, and vice versa. The map condition $(I_k times.o Phi)(rho) succ.eq.not 0$ is strictly stronger than the scalar condition $"Tr"[C_Phi rho] < 0$ @Horodecki_2009.
+Under the Choi-Jamiolkowski isomorphism, every entanglement witness $W = C_Phi$ corresponds to a PNCP map $Phi$, and vice versa. This gives two ways to test a state, and the map-based one is strictly stronger. The scalar test asks only whether $"Tr"[C_Phi rho] < 0$, a single separating hyperplane. The map test asks whether the ampliation $(I_k times.o Phi)(rho)$ has a negative eigenvalue, $(I_k times.o Phi)(rho) succ.eq.not 0$. The latter holds exactly when some vector $|psi chevron.r$ satisfies
+$ chevron.l psi | (I times.o Phi)(rho) | psi chevron.r = "Tr"[(I times.o Phi^*)(|psi chevron.r chevron.l psi|) rho] < 0, $
+where $Phi^*$ is the adjoint map (also positive). The map therefore encodes an entire family of scalar witnesses $W_psi = (I times.o Phi^*)(|psi chevron.r chevron.l psi|)$, one per output vector $|psi chevron.r$; the Choi-matrix test $"Tr"[C_Phi rho]$ is the single member obtained from the maximally entangled $|psi chevron.r$, whereas the eigenvalue check optimizes over all $|psi chevron.r$ at once. Hence
+$ lambda_min ((I times.o Phi^*)(rho)) <= "Tr"[C_Phi rho], $
+so the map detects every state the scalar test does, and in general strictly more @Horodecki_2009. The search uses this directly, screening every composite with both tests (Section @methods).
 
 == Semidefinite Programming
 
@@ -281,6 +288,14 @@ $ p_Phi (bold(x), bold(y)) := bold(y)^T Phi(bold(x) bold(x)^T) bold(y). $
 
 A PNCP map corresponds exactly to a non-negative non-SOS polynomial, and constructing such a polynomial gives an entanglement witness directly.
 
+=== Non-uniqueness of the matrix representation <gram-freedom>
+
+The polynomial $p_Phi$ does not determine the matrix $C_Phi$ uniquely. Writing $p_Phi$ as a quadratic form in the product monomials $bold(z) = bold(x) times.o bold(y)$,
+$ p_Phi (bold(x), bold(y)) = bold(z)^T M bold(z), quad bold(z) = bold(x) times.o bold(y), $
+any symmetric $M$ that reproduces the coefficients of $p_Phi$ is an admissible representation. Two such matrices $M$, $M'$ give the same polynomial precisely when $M - M'$ vanishes on all product vectors, $bold(z)^T (M - M') bold(z) = 0$. The matrices with this property form a linear space $L$, spanned by the $2 times 2$ minor (Segre) relations $(x_i y_k)(x_j y_l) - (x_i y_l)(x_j y_k)$; concretely $L tilde.eq and^2 RR^n times.o and^2 RR^m$, with $dim L = binom(n, 2) binom(m, 2)$. The admissible representations therefore form an affine space $M_0 + L$.
+
+Every representative encodes the same polynomial, hence the same values on product vectors and, by linearity, the same expectation $"Tr"[M sigma]$ on every separable $sigma$. They differ only off the Segre variety, i.e. on entangled states. A single non-negative non-SOS polynomial thus yields not one witness but a whole family of them, all sharing the same separable boundary while cutting the entangled region differently. One subtlety carries into detection: the relations defining $L$ vanish on _real_ product vectors but not on complex ones, so members of $M_0 + L$ agree as witnesses over $RR$ but need not agree, or even remain block-positive, over $CC$.
+
 #algorithm-figure(
   "KMSZ construction for PNCP maps",
   {
@@ -365,6 +380,12 @@ Each composite is screened by three complementary detection tests:
 
 The witness library and the DPS test are complementary: precomputed witnesses are cheap to evaluate but are individually much less likely to detect entanglement, whereas the DPS relaxation is more robust but far more expensive. Running all three and recording each score also lets us compare the methods directly, how often the witnesses alone suffice versus how much the DPS relaxation adds (Section @results-section).
 
+== Expanding the witness library <asym-witnesses>
+
+The witness library of Stage 1 stores one matrix per polynomial, the symmetric Gram representative returned by the construction. As Section @gram-freedom shows, this is an arbitrary choice within the affine family $M_0 + L$, and every other representative is an equally valid witness over the reals. The earlier MATLAB prototype only ever used the symmetric representative; we instead exploit the freedom and expand each polynomial into several representations, enlarging the witness library at negligible cost. For each generated map $M_0$ we sample coefficients $lambda$ and form $M_0 + sum_alpha lambda_alpha N_alpha$ over a basis ${N_alpha}$ of $L$ (the `gram_freedom` primitive); the driver `gen_asym.jl` does this in bulk, emitting a configurable number of representations per source map.
+
+The symmetric representative is also the partial-transpose-invariant one, $M_0 = M_0^Gamma$, the same shape as the symmetrized state construction of @ppt-gen. The added representatives break this symmetry. By construction they are unchanged as real polynomials, so they retain every property of the original witness on the real domain: they stay positive on all real product vectors and never assign a negative score to a separable state with real entries. They differ only in how they act on entangled inputs, which is precisely what makes them useful as additional, independent screens in the all-pairs search. A sampling-based block-positivity check (the `is_block_positive` primitive) guards the construction and is also the tool for probing the complex-domain question raised in Section @gram-freedom.
+
 == Performance
 A direct head-to-head comparison with the earlier MATLAB prototype is difficult, because the two implementations were built with different goals and make different design choices. The prototype drew random _integer_ matrices to produce cosmetically nicer certificates; this is not random enough and frequently failed, so a single candidate often needed many recomputation attempts. Our Julia implementation can still generate candidates that way, but for speed it samples from a normal distribution, which almost always succeeds on the first try (Section @ppt-gen). The two also rationalize differently: the prototype rationalizes the entire problem up front, paying for rational arithmetic throughout, whereas we rationalize only the final solution after the SDP is solved (Section @rationalization). The solver itself is largely language-independent, but the Julia code benefits from more efficient data handling and tighter solver integration.
 
@@ -425,11 +446,11 @@ The implementation is a small Julia package in the `code/` directory. The core l
   [`find_pncp_poly`, `pncp_mat`, `poly2mat`], [Orchestrate witness generation with retries and export the certificate as a Choi matrix.],
 )
 
-The module also exports a few supporting primitives — `rand_sep` and `rand_psd` for reference states, `is_ppt` for the PPT check, and `swap`/`antisymmetric_projector` for the antisymmetric-subspace construction of @Sindici_2018.
+The module also exports a few supporting primitives: `rand_sep` and `rand_psd` for reference states, `is_ppt` for the PPT check, `gram_freedom` and `is_block_positive` for the witness-representation freedom and the block-positivity check of Section @gram-freedom, and `swap`/`antisymmetric_projector` for the antisymmetric-subspace construction of @Sindici_2018.
 
 The package leans on the established Julia optimization and quantum-information stack rather than reimplementing it. Polynomials and the SOS cone are handled by `DynamicPolynomials` and `SumOfSquares`; the resulting semidefinite programs are modelled with `JuMP` and solved by `MOSEK` through `MosekTools` (any JuMP-compatible SDP solver could be substituted). The DPS hierarchy is not reimplemented: the search driver calls `entanglement_robustness` from `Ket`, an existing quantum-information toolbox that also supplies utilities such as the partial transpose. Matrices and witness libraries are serialized with `JLD2` so that generation and search can be separated and resumed.
 
-Four command-line drivers in `code/scripts/` orchestrate the long-running jobs, all sharing a `common.jl` harness that provides resumable, reproducible, multithreaded batch generation: completed batches are detected and skipped on a rerun, and every candidate is seeded deterministically so a configuration yields the same dataset regardless of thread count. `gen_pncp.jl` builds the PNCP witness library (Stage 1), `gen_ppt.jl` samples and DPS-filters the bound entangled candidate pool (Stage 2), and `test_ppt2.jl` runs the threaded all-pairs search of @pipeline (Stage 3), logging any detection together with the offending state and witness. A fourth driver, `compare_detection.jl`, records every criterion's score on each detected state, the two witness tests and the DPS robustness, so the detection methods can be compared directly (Section @results-section). The `code/test/` suite checks the construction against reference values and verifies that generated maps are positive on large random samples, and the `code/notebooks/` directory documents the rationalization, PPT-state, and UPB workflows interactively.
+Five command-line drivers in `code/scripts/` orchestrate the long-running jobs, all sharing a `common.jl` harness that provides resumable, reproducible, multithreaded batch generation: completed batches are detected and skipped on a rerun, and every candidate is seeded deterministically so a configuration yields the same dataset regardless of thread count. `gen_pncp.jl` builds the PNCP witness library (Stage 1), `gen_ppt.jl` samples and DPS-filters the bound entangled candidate pool (Stage 2), and `test_ppt2.jl` runs the threaded all-pairs search of @pipeline (Stage 3), logging any detection together with the offending state and witness. `gen_asym.jl` expands a witness library into the alternative Gram representations of Section @asym-witnesses. A fifth driver, `compare_detection.jl`, records every criterion's score on each detected state, the two witness tests and the DPS robustness, so the detection methods can be compared directly (Section @results-section). The `code/test/` suite checks the construction against reference values and verifies that generated maps are positive on large random samples, and the `code/notebooks/` directory documents the rationalization, PPT-state, and UPB workflows interactively.
 
 == Complexity and Practical Limits <complexity-limits>
 All the problems we are looking at are SDPs with exponential @Gharibian_2009 complexity in dimension and relaxation depth @Doherty_2004. Practical bottlenecks are:
@@ -454,42 +475,18 @@ Using Pipeline A (Randomized PPT Composition + DPS), we performed broad-coverage
 
 No counterexamples to the PPT2 conjecture were found in these searches.
 
+== Representation and symmetry effects <witness-findings>
+
+Alongside the main search we recorded, for every detected state, the score of each detection test, which lets us compare the methods directly. Two robust patterns emerge.
+
+First, the map witness test is empirically the stronger one, exactly as argued in Section @qse-section. Across all detected composites, every state flagged by the scalar test $"Tr"[W C] < 0$ is also flagged by the map test $lambda_min ((I times.o Phi_W)(C)) < 0$, while the converse fails: the map test detects a strict superset. The two run together and their scores are logged by `compare_detection.jl`.
+
+Second, the partial-transpose-invariant (symmetric) representatives are inert for our purpose. Symmetrized witnesses, the $M_0 = M_0^Gamma$ representatives used by the original construction, never detected a single PPT entangled state in our experiments, and PPT states built in the symmetric `ppt_invariant` shape never appeared as counterexamples. This is consistent with the fact that decomposable witnesses cannot detect PPT entanglement (Section @qse-section): a witness aligned with the partial-transpose fixed-point set carries little information about the PPT cone. We do not have a full characterization, but the observation is uniform enough that we run the search on the asymmetric representatives (Section @asym-witnesses) and on generic, non-symmetrized candidates instead.
+
+The asymmetric representatives behave exactly as the theory predicts on the real domain. They remain positive on all real product vectors, and over many random trials they never assigned a negative score to a real separable state, so they raise no false positives in the regime we actually search, where every generated state and witness has real entries, and they detect real-domain entanglement readily. Whether this extends to the complex domain is open: the relations underlying the representation freedom (Section @gram-freedom) vanish only on real product vectors, so an asymmetric representative that is a valid witness over $RR$ need not be block-positive over $CC$. Establishing complex block-positivity, or restoring it by a suitable projection, is left for future work.
+
 = Conclusion
 This thesis presents a computational approach to the PPT2 conjecture, integrating methods for generating PPT maps, composing them, and testing for entanglement using both DPS-based relaxations and PNCP-based witness construction. While no counterexamples were found in our extensive searches, the methodology provides a framework for further exploration and potential discovery in this open problem.
-
-= Links
-- https://arxiv.org/pdf/1506.08834
-- https://arxiv.org/pdf/quant-ph/0603199
-- https://arxiv.org/pdf/2402.12944
-- https://arxiv.org/pdf/1807.01266
-- https://arxiv.org/pdf/2001.01181
-- https://arxiv.org/pdf/2010.07898
-- https://arxiv.org/pdf/1807.03636
-- https://arxiv.org/pdf/2011.03809
-- https://arxiv.org/pdf/2512.06551
-- https://arxiv.org/html/2501.03959v1
-- https://arxiv.org/pdf/quant-ph/0308032
-- https://felixleditzky.info/teaching/ST23/Felix%20Leditzky%20-%20Math%20595%20Quantum%20channels.pdf
-- https://arxiv.org/pdf/quant-ph/0602223
-- https://arxiv.org/pdf/0810.4507
-- https://arxiv.org/pdf/1309.7992
-- https://journals.aps.org/pra/abstract/10.1103/PhysRevA.71.032333
-- https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.3.023101
-- https://arxiv.org/pdf/quant-ph/9801069
-- https://arxiv.org/pdf/quant-ph/0702225
-- https://arxiv.org/pdf/0907.4979
-- https://link.springer.com/article/10.1007/s00220-017-2859-0
-- http://congres.cran.univ-lorraine.fr/2002/CDC_2002/pdffiles/papers/832_FrP06-6.pdf
-- https://arxiv.org/html/2506.11346v3
-- https://arxiv.org/html/2308.07019v5#bib.bib22
-- https://helda.helsinki.fi/server/api/core/bitstreams/486c1a74-82f8-4c6b-b665-6a9142606c78/content
-- https://arxiv.org/pdf/0712.1114
-- https://www.nature.com/articles/s41598-022-14920-5
-- https://arxiv.org/pdf/0907.2369
-- https://iopscience.iop.org/article/10.1088/0305-4470/39/45/020/pdf
-- https://arxiv.org/pdf/0805.1318
-- https://iopscience.iop.org/article/10.1088/1751-8121/acaa16
-- https://link.springer.com/article/10.1007/s00023-023-01325-x
 
 #bibliography(
   title: "References",

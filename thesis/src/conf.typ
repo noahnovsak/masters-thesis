@@ -39,6 +39,16 @@
   set math.equation(numbering: "(1)")
   show math.equation: set text(font: "New Computer Modern Math")
 
+  show ref: it => {
+    let el = it.element
+    if el != none and el.func() == heading {
+      let num = counter(heading).at(el.location())
+      [#num.at(0) #el.body]
+    } else {
+      it
+    }
+}
+
   // Centered figures with bold caption labels ("Figure N", "Table N").
   show figure: set align(center)
   show figure.caption: it => context {
