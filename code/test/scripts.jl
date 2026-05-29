@@ -1,10 +1,7 @@
 using Test
 using JLD2
 using Random
-
-# `common.jl` is the shared batch-generation engine behind every script
-# (gen_pncp / gen_ppt / test_ppt2 / compare_detection).
-include(joinpath(@__DIR__, "..", "scripts", "common.jl"))
+using ppt2   # the dataset I/O engine: load_batches, batch_id_of, sample_batch, generate_dataset, …
 
 # A deterministic trial: candidate `c` (seeded `Xoshiro(seed_base + c)`) is
 # accepted when its first random draw is below `thresh`, returning that draw as a

@@ -1,18 +1,44 @@
-using JLD2
-using Base.Threads
-using Random
-using ProgressMeter
+# All dataset I/O: the scripts generate batched `.jld2` files, the notebooks
+# read them back. Both sides share these.
 
-# Shared orchestration for the generation/test scripts: resumable, reproducible,
-# multithreaded batch generation with per-batch trial/success statistics.
+using JLD2: jldopen
+using Base.Threads: @threads, nthreads
+using ProgressMeter: Progress, update!, next!
+
+# ── Readers ──────────────────────────────────────────────────────────────────
 
 batch_id_of(key) = parse(Int, split(key, "_")[2])
 
 """
-    completed_batches(filename) -> Set{Int}
+    load_batches(path) -> Vector
 
-Ids of the `batch_<id>` groups already present in `filename` (empty if missing).
+Concatenate every `batch_<id>` group in `path`, in id order (`meta/*` skipped).
+This is the ordering `dot_idx`/`amp_idx` and a composite's `i`/`j` index into.
 """
+function load_batches(path)
+    jldopen(path, "r") do file
+        ks = sort([k for k in keys(file) if startswith(k, "batch_")]; by = batch_id_of)
+        isempty(ks) ? [] : reduce(vcat, file[k] for k in ks)
+    end
+end
+
+"""
+    load_meta(path) -> Dict{String,Any}
+
+The `meta` group as a Dict (dataset values plus per-batch attempted/accepted
+counters); empty when the file carries no metadata.
+"""
+function load_meta(path)
+    jldopen(path, "r") do file
+        haskey(file, "meta") || return Dict{String,Any}()
+        g = file["meta"]
+        Dict{String,Any}(k => g[k] for k in keys(g))
+    end
+end
+
+# ── Writers: resumable, reproducible, multithreaded batch generation ──────────
+
+"Ids of the `batch_<id>` groups already in `filename` (empty if missing)."
 function completed_batches(filename)
     isfile(filename) || return Set{Int}()
     jldopen(filename, "r") do file
@@ -20,31 +46,13 @@ function completed_batches(filename)
     end
 end
 
-"""
-    load_batches(path) -> Vector{Matrix{Float64}}
-
-Concatenate every `batch_<id>` group (in id order), skipping `meta/*` entries.
-"""
-function load_batches(path)
-    jldopen(path, "r") do file
-        ks = sort([k for k in keys(file) if startswith(k, "batch_")]; by = batch_id_of)
-        isempty(ks) ? Matrix{Float64}[] : reduce(vcat, file[k] for k in ks)
-    end
-end
-
-"""
-    batch_counts(filename, batch_ids) -> (attempted, accepted)
-
-Sum the stored trial/success counters for the given batches.
-"""
+"Sum the stored attempted/accepted counters for the given batches."
 function batch_counts(filename, batch_ids)
-    attempted = 0
-    accepted = 0
+    attempted = accepted = 0
     (!isfile(filename) || isempty(batch_ids)) && return attempted, accepted
     jldopen(filename, "r") do file
         for id in batch_ids
-            ak = "meta/batch_$(id)_attempted"
-            ck = "meta/batch_$(id)_accepted"
+            ak, ck = "meta/batch_$(id)_attempted", "meta/batch_$(id)_accepted"
             attempted += haskey(file, ak) ? file[ak] : 0
             accepted += haskey(file, ck) ? file[ck] : 0
         end
@@ -52,6 +60,7 @@ function batch_counts(filename, batch_ids)
     return attempted, accepted
 end
 
+"Write each `meta` entry once; existing keys are left untouched."
 function write_meta!(filename, meta)
     jldopen(filename, "a+") do file
         for (k, v) in meta
@@ -64,15 +73,10 @@ end
 """
     sample_batch(trial, target, seed_base; T) -> (values, attempted)
 
-Collect `target` accepted results. Candidate `c = 1, 2, …` is evaluated with
-`trial(Xoshiro(seed_base + c))`, which returns the value to keep on success or
-`nothing` on rejection. Candidates are evaluated in parallel waves; the kept
-results are the `target` successes with the smallest candidate indices, and
-`attempted` is the index of the last kept success.
-
-Because each candidate's outcome is fixed by its seed and the kept set is the
-lowest-index successes, the result is identical regardless of thread count or
-wave sizing — the run is reproducible and thread-safe.
+Collect `target` accepted results. Candidate `c` is `trial(Xoshiro(seed_base + c))`,
+returning the value to keep or `nothing`. Candidates run in parallel waves; the
+kept set is the `target` lowest-index successes, so the result is independent of
+thread count. `attempted` is the last kept success's index.
 """
 function sample_batch(trial, target::Int, seed_base::Int; T::Type = Matrix{Float64})
     successes = Dict{Int,T}()
@@ -92,8 +96,7 @@ function sample_batch(trial, target::Int, seed_base::Int; T::Type = Matrix{Float
         next_idx += wave
 
         if length(successes) < target
-            evaluated = next_idx - 1
-            rate = max(length(successes), 1) / evaluated
+            rate = max(length(successes), 1) / (next_idx - 1)
             remaining = target - length(successes)
             wave = max(nthreads(), ceil(Int, remaining / rate * 1.2))
         end
@@ -107,17 +110,12 @@ end
     generate_dataset(filename, total, batch_size, trial; kwargs...)
 
 Generate `total` accepted results in batches of `batch_size`, resuming from any
-batches already in `filename`. `trial(rng)::Union{Nothing,T}` produces one
-candidate. Each batch stores its results plus `meta/batch_<id>_attempted` and
-`meta/batch_<id>_accepted`; entries in `meta` are written once.
+batches already in `filename`. `trial(rng)::Union{Nothing,T}` is one candidate.
+Each batch stores its results plus `meta/batch_<id>_attempted`/`_accepted`.
 
-Keyword arguments:
-  - `seed0`   base RNG seed offset (default 0)
-  - `stride`  seed span reserved per batch; must exceed the trials any batch
-              needs (default 10^9)
-  - `T`       element type produced by `trial` (default `Matrix{Float64}`)
-  - `meta`    dataset-level metadata to record once
-  - `label`   noun used in progress output (default "results")
+Keywords: `seed0` (base seed offset), `stride` (seed span per batch, must exceed
+any batch's trials), `T` (element type), `meta` (dataset metadata, written once),
+`label` (noun for progress output).
 """
 function generate_dataset(
     filename, total, batch_size, trial;
@@ -146,9 +144,7 @@ function generate_dataset(
     update!(progress, length(done))
 
     for batch_id in 1:n_batches
-        if batch_id in done
-            continue
-        end
+        batch_id in done && continue
         seed_base = seed0 + (batch_id - 1) * stride
         values, attempted = sample_batch(trial, batch_size, seed_base; T = T)
 

@@ -1,8 +1,8 @@
 using Random
-using ppt2
+using JLD2          # jldopen for manual batch writes
+using ProgressMeter # Progress, update!, next!
+using ppt2          # gram_freedom, load_batches, completed_batches, write_meta!
 using ArgParse
-
-include(joinpath(@__DIR__, "common.jl"))
 
 # Expand a pool of PnCP forms (e.g. pncp_4x4.jld2) into equivalent Gram-matrix
 # representations. The Gram matrix of a biquadratic form is unique only up to the

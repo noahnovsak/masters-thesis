@@ -1,10 +1,5 @@
-using Random
-using ppt2
+using ppt2          # rand_ppt, detect_dps, generate_dataset
 using ArgParse
-using Ket
-using MosekTools
-
-include(joinpath(@__DIR__, "common.jl"))
 
 function _parse_args()
     s = ArgParseSettings(description = "Sample random PPT states and keep the entangled ones")
@@ -52,8 +47,7 @@ function main()
     # relaxation certifies entanglement (robustness above tol).
     function trial(rng)
         state = rand_ppt(n, m; rng = rng, ppt_invariant = ppt_invariant)
-        robustness, _ = entanglement_robustness(state, [n, m], 2; solver = Mosek.Optimizer)
-        return robustness > tol ? Matrix{Float64}(state) : nothing
+        return detect_dps(state, n, m; tol = tol).detected ? Matrix{Float64}(state) : nothing
     end
 
     generate_dataset(

@@ -1,11 +1,6 @@
-# Shared helpers for the experiment notebooks.
+# Notebook-only helpers: form quality-control and the known bound-entangled
+# example. `include("common.jl")` once at the top of a notebook.
 #
-# Include once at the top of a notebook with `include("common.jl")`.
-# Method-specific generators (UPB search, antisymmetric-subspace SDP) live in
-# their own notebooks; this file holds the pieces that were being copy-pasted
-# between several of them: the PPT2 detection driver and form quality-control.
-# General primitives (random states, (anti)symmetric projectors, the PPT check)
-# live in the `ppt2` library.
 
 using Random
 using LinearAlgebra
@@ -15,25 +10,9 @@ using Ket
 using JLD2
 using ProgressMeter
 
-using ppt2   # pncp_mat, ampliation, rand_ppt, rand_sep, rand_psd, is_ppt, antisymmetric_projector, ...
+using ppt2
 
-# ── Loading precomputed PNCP forms ────────────────────────────────────────────
-
-"""
-    load_forms(path) -> Vector{Matrix}
-
-Concatenate every batch stored in a `pncp_forms_*.jld2` file into one vector.
-"""
-function load_forms(path::AbstractString)
-    jldopen(path, "r") do file
-        vcat([file[k] for k in keys(file) if !startswith(k, "meta/")]...)
-    end
-end
-
-# The random-state generators `rand_ppt`, `rand_sep`, and `rand_psd` live in the
-# `ppt2` library. To sample PPT states with integer entries (as in the old
-# `gen_ppt` notebook), pass a custom sampler, e.g.
-#
+# For integer-entry PPT states, pass a custom sampler to rand_ppt, e.g.
 #     rand_ppt(n, m; rand_vec = (d...; rng) -> float(rand(rng, -1:1, d...)))
 
 # ── A known 3⊗3 bound-entangled example ───────────────────────────────────────
@@ -161,67 +140,4 @@ function min_xy_form(
     end
 
     return best_val, best_x, best_y
-end
-
-# ── PPT2 detection ────────────────────────────────────────────────────────────
-#
-# Three independent ways to certify that a state τ is entangled:
-#   :trace      — minimal ⟨form, τ⟩ over the PNCP forms (a linear witness)
-#   :ampliation — minimal eigenvalue of (I⊗form)(τ) over the forms
-#   :dps        — DPS robustness from Ket (level-2 hierarchy)
-# A negative trace / ampliation value, or a positive robustness, means entangled.
-
-detect_trace(τ, forms; tol=1e-8) = let (v, i) = findmin(tr.(forms .* Ref(τ)))
-    (value=v, idx=i, detected=v < -tol)
-end
-
-detect_ampliation(τ, forms, n, m; tol=1e-8) =
-    let (v, i) = findmin(minimum.(real.(eigvals.(ampliation.(forms, Ref(τ), n, m)))))
-        (value=v, idx=i, detected=v < -tol)
-    end
-
-detect_dps(τ, n, m; tol=1e-8) = let (r, w) = entanglement_robustness(Hermitian(Matrix(τ)), [n, m], 2; solver=Mosek.Optimizer)
-    (value=r, witness=w, detected=r > tol)
-end
-
-"""
-    test_ppt2(generator; n=4, m=4, n_trials=1000, compose=true,
-              criteria=(:trace, :ampliation, :dps), forms=nothing, tol=1e-8)
-
-Search for a counterexample to the PPT² conjecture.
-
-`generator(; rng)` must return a PPT state ρ ∈ C^n ⊗ C^m. When `compose` is true
-(the conjecture's setting) the candidate tested is the composite
-τ = (I⊗Φ_ρ)(ρ) built by `ampliation(ρ, ρ, n, m)`; otherwise ρ itself is tested.
-Each requested criterion is checked; `:trace`/`:ampliation` need `forms`.
-
-Returns `(state, evidence)` on the first detection, else `(nothing, nothing)`.
-"""
-function test_ppt2(
-    generator; n::Int=4, m::Int=4, n_trials::Int=1000, compose::Bool=true,
-    criteria=(:trace, :ampliation, :dps), forms=nothing, tol::Float64=1e-8,
-    rng=Random.GLOBAL_RNG,
-)
-    if (:trace in criteria || :ampliation in criteria) && forms === nothing
-        error("criteria $(criteria) require `forms` (load with load_forms)")
-    end
-
-    @showprogress for _ in 1:n_trials
-        ρ = generator(; rng=rng)
-        τ = compose ? Hermitian(ampliation(ρ, ρ, n, m)) : Hermitian(Matrix(ρ))
-
-        if :trace in criteria
-            d = detect_trace(τ, forms; tol=tol)
-            d.detected && return ρ, (criterion=:trace, d...)
-        end
-        if :ampliation in criteria
-            d = detect_ampliation(τ, forms, n, m; tol=tol)
-            d.detected && return ρ, (criterion=:ampliation, d...)
-        end
-        if :dps in criteria
-            d = detect_dps(τ, n, m; tol=tol)
-            d.detected && return ρ, (criterion=:dps, d...)
-        end
-    end
-    return nothing, nothing
 end

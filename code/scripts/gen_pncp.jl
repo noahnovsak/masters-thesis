@@ -1,8 +1,5 @@
-using Random
-using ppt2
+using ppt2          # pncp_mat, generate_dataset
 using ArgParse
-
-include(joinpath(@__DIR__, "common.jl"))
 
 function _parse_args()
     s = ArgParseSettings(description = "Generate positive-but-not-completely-positive (PnCP) maps as matrices")

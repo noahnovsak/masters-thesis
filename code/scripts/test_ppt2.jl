@@ -1,14 +1,12 @@
-using LinearAlgebra
+using LinearAlgebra   # eigmin in log_detection
 using Base.Threads
 using ProgressMeter
-using MosekTools
-using ppt2
+using JLD2            # jldopen in save_result
+using ppt2            # test_ppt2, ampliation, load_batches
 using ArgParse
-using Ket
+using Ket             # partial_transpose in log_detection
 using Dates
 using Logging
-
-include(joinpath(@__DIR__, "common.jl"))
 
 function _parse_args()
     s = ArgParseSettings(description = "Test PPT2 over compositions of pre-generated PPT states")
@@ -65,7 +63,7 @@ function save_result(dir, i, j, composite, wit, dot_idx, dot_mat, amp_idx, amp_m
     end
 end
 
-function test_ppt2(n, m, forms, states, tol, output_dir, logger)
+function run_pairs(n, m, forms, states, tol, output_dir, logger)
     N = length(states)
     log_lock = ReentrantLock()
 
@@ -73,15 +71,15 @@ function test_ppt2(n, m, forms, states, tol, output_dir, logger)
     @showprogress @threads for p in 0:(N * N - 1)
         i = p ÷ N + 1
         j = p % N + 1
-        composite = ampliation(states[i], states[j], n, m)
 
-        trc, trc_i = findmin(tr.(forms .* Ref(composite)))
-        amp, amp_i = findmin(minimum.(real.(eigvals.(ampliation.(forms, Ref(composite), n, m)))))
-        ro, wit = entanglement_robustness(composite, [n, m], 2; solver = Mosek.Optimizer)
+        # compose states[i] with states[j] and run every criterion
+        r = test_ppt2(states[i], states[j]; n = n, m = m, forms = forms, tol = tol, mode = :parallel)
 
-        if ro > tol || trc < -tol || amp < -tol
-            log_detection(logger, log_lock, i, j, n, m, composite, ro, trc, amp)
-            save_result(output_dir, i, j, composite, wit, trc_i, forms[trc_i], amp_i, forms[amp_i])
+        if r.detected
+            composite = ampliation(states[i], states[j], n, m)   # only needed to log/save
+            log_detection(logger, log_lock, i, j, n, m, composite, r.dps.value, r.trace.value, r.ampliation.value)
+            save_result(output_dir, i, j, composite, r.dps.witness,
+                        r.trace.idx, forms[r.trace.idx], r.ampliation.idx, forms[r.ampliation.idx])
         end
     end
 end
@@ -113,7 +111,7 @@ function main()
     println("Loaded $(length(states)) states and $(length(forms)) forms. " *
             "Testing $(n_pairs) ordered pairs on $(nthreads()) threads...")
 
-    test_ppt2(n, m, forms, states, tol, output_dir, logger)
+    run_pairs(n, m, forms, states, tol, output_dir, logger)
 
     with_logger(logger) do
         @info "Run finished"

@@ -1,11 +1,5 @@
-using Random
-using LinearAlgebra
-using ppt2
+using ppt2          # rand_ppt, test_ppt2, generate_dataset, load_batches
 using ArgParse
-using Ket
-using MosekTools
-
-include(joinpath(@__DIR__, "common.jl"))
 
 # Per accepted state we keep the state plus the raw score of every criterion;
 # the detection booleans are derived from these against `tol` at summary time,
@@ -105,19 +99,17 @@ function main()
     # recorded so the methods can be compared afterwards.
     function trial(rng)
         state = rand_ppt(n, m; rng = rng, ppt_invariant = ppt_invariant)
-        robustness, _ = entanglement_robustness(state, [n, m], level; solver = Mosek.Optimizer)
-        min_dot, dot_idx = findmin(tr.(forms .* Ref(state)))
-        min_amp, amp_idx = findmin(minimum.(real.(eigvals.(ampliation.(forms, Ref(state), n, m)))))
+        # criteria run on the state itself (not a composite), every score recorded
+        r = test_ppt2(state; n = n, m = m, compose = false, forms = forms, level = level, tol = tol, mode = :parallel)
 
-        detected = robustness > tol || min_dot < -tol || min_amp < -tol
-        detected || return nothing
+        r.detected || return nothing
         return (
             state = Matrix{Float64}(state),
-            robustness = Float64(robustness),
-            min_dot = Float64(min_dot),
-            min_amp = Float64(min_amp),
-            dot_idx = Int(dot_idx),
-            amp_idx = Int(amp_idx),
+            robustness = Float64(r.dps.value),
+            min_dot = Float64(r.trace.value),
+            min_amp = Float64(r.ampliation.value),
+            dot_idx = Int(r.trace.idx),
+            amp_idx = Int(r.ampliation.idx),
         )
     end
 

@@ -8,10 +8,13 @@ using MosekTools
 using DynamicPolynomials: AbstractPolynomial, @polyvar, variables, coefficient
 using SumOfSquares: SOSModel, SOSCone, gram_matrix
 
-import Ket: partial_transpose
+import Ket: partial_transpose, entanglement_robustness   # `using Ket` would clash with symmetric_projector
 
 export pncp_mat, ampliation, rand_ppt, rand_sep, rand_psd, is_ppt,
-    antisymmetric_projector, gram_freedom, is_block_positive
+    antisymmetric_projector, gram_freedom, is_block_positive,
+    detect_trace, detect_ampliation, detect_dps, test_ppt2,
+    load_batches, load_meta, batch_id_of,
+    completed_batches, batch_counts, write_meta!, sample_batch, generate_dataset
 
 
 ⊗(a::AbstractMatrix, b::AbstractMatrix) = kron(a, b)
@@ -233,5 +236,80 @@ function is_ppt(ρ::AbstractMatrix, dA::Int, dB::Int; tol=1e-8)
     PT = partial_transpose(Matrix(ρ), 2, [dA, dB])
     return eigmin(Hermitian(PT)) ≥ -tol
 end
+
+# ── Entanglement detection ────────────────────────────────────────────────────
+#
+# Three independent criteria; each returns the raw score, the form/witness
+# achieving it, and a `detected` flag. Entangled when trace/ampliation < -tol or
+# robustness > tol.
+
+"Linear-witness criterion: min `tr(form·τ)` over `forms`."
+detect_trace(τ, forms; tol=1e-8) = let (v, i) = findmin(tr.(forms .* Ref(τ)))
+    (value=v, idx=i, detected=v < -tol)
+end
+
+"Min eigenvalue of `(I⊗form)(τ)` over `forms`."
+detect_ampliation(τ, forms, n, m; tol=1e-8) =
+    let (v, i) = findmin(minimum.(real.(eigvals.(ampliation.(forms, Ref(τ), n, m)))))
+        (value=v, idx=i, detected=v < -tol)
+    end
+
+"Level-`level` DPS robustness from Ket; `witness` is Ket's entanglement witness."
+detect_dps(τ, n, m; level=2, tol=1e-8) =
+    let (r, w) = entanglement_robustness(Hermitian(Matrix(τ)), [n, m], level; solver=Mosek.Optimizer)
+        (value=r, witness=w, detected=r > tol)
+    end
+
+# One named criterion applied to τ.
+function _criterion(c::Symbol, τ, forms, n, m, level, tol)
+    c === :trace      && return detect_trace(τ, forms; tol=tol)
+    c === :ampliation && return detect_ampliation(τ, forms, n, m; tol=tol)
+    c === :dps        && return detect_dps(τ, n, m; level=level, tol=tol)
+    error("unknown criterion $(c)")
+end
+
+"""
+    test_ppt2(ρ, σ=ρ; n=4, m=4, compose=true, criteria=(:trace,:ampliation,:dps),
+              forms=nothing, level=2, tol=1e-8, mode=:sequential)
+
+Run the detection criteria on a PPT² candidate. With `compose` (the conjecture's
+setting) the tested operator is the composite τ = (I⊗Φ_σ)(ρ) =
+`ampliation(ρ, σ, n, m)`; `σ` defaults to `ρ` for self-composition. With
+`compose=false`, `ρ` itself is tested.
+
+`mode` controls how `criteria` are combined:
+- `:sequential` — evaluate in the given order (cheap first), short-circuit on the
+  first that fires, and return its evidence `(criterion, value, idx/witness,
+  detected)`, or `nothing`. Best for a search loop.
+- `:parallel` — evaluate all criteria and return a NamedTuple keyed by criterion
+  symbol with each result, plus an overall `detected`. Best for recording every
+  score.
+
+`:trace`/`:ampliation` need `forms`.
+"""
+function test_ppt2(ρ, σ=ρ; n::Int=4, m::Int=4, compose::Bool=true,
+                   criteria=(:trace, :ampliation, :dps), forms=nothing,
+                   level::Int=2, tol::Float64=1e-8, mode::Symbol=:sequential)
+    (:trace in criteria || :ampliation in criteria) && forms === nothing &&
+        error("criteria $(criteria) require `forms`")
+    τ = compose ? Hermitian(ampliation(ρ, σ, n, m)) : Hermitian(Matrix(ρ))
+
+    if mode === :sequential
+        for c in criteria
+            d = _criterion(c, τ, forms, n, m, level, tol)
+            d.detected && return (criterion=c, d...)
+        end
+        return nothing
+    elseif mode === :parallel
+        results = map(c -> _criterion(c, τ, forms, n, m, level, tol), criteria)
+        return merge(NamedTuple{criteria}(results),
+                     (detected = any(r -> r.detected, results),))
+    else
+        error("mode must be :sequential or :parallel, got $(mode)")
+    end
+end
+
+# All dataset I/O (readers + the batch-generation engine the scripts drive).
+include("io.jl")
 
 end # module ppt2
