@@ -22,6 +22,8 @@ end
     include("poly2mat.jl")
     include("states.jl")
     include("ampliation.jl")
+    include("gram_freedom.jl")
+    include("block_positive.jl")
     include("reproduce_results.jl")
     include("scripts.jl")
 

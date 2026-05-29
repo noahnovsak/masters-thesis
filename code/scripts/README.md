@@ -67,6 +67,7 @@ entanglement (robustness `> --tol`).
 | `--dim_A`, `-n` | 4 | dimension of subspace A |
 | `--dim_B`, `-m` | 4 | dimension of subspace B |
 | `--tol` | 1e-8 | keep states with robustness above this |
+| `--ppt-invariant` | off | symmetrise off-diagonal blocks so each state is invariant under partial transpose |
 | `--output`, `-o` | `ppt_entangled_NxM.jld2` | output file |
 
 ### `test_ppt2.jl`
@@ -87,6 +88,36 @@ witness, and best detecting forms are written to `result_<i>_<j>.jld2`.
 | `--states`, `-s` | `ppt_entangled_NxM.jld2` | pre-generated PPT states |
 | `--forms`, `-f` | `pncp_NxM.jld2` | pre-generated PnCP forms |
 | `--output-dir`, `-o` | `.` | directory for results and the run log |
+
+### `gen_asym.jl`
+
+Expands an existing pool of PnCP forms into equivalent Gram-matrix
+representations. The Gram matrix of a biquadratic form is unique only up to the
+space `L` of matrices vanishing on the real Segre variety (`gram_freedom`), so
+for each source form `M0` this emits `--count` alternatives `M0 + Σ λ·N` that
+represent the **same polynomial** (identical on product vectors / separable
+states) but differ off the Segre variety — a family of candidate witnesses
+sharing one separable boundary. One source form becomes one batch of `--count`
+matrices, so `load_batches` reads the output as a flat form library that drops
+straight into `compare_detection.jl` / `test_ppt2.jl` via `--forms`.
+
+```sh
+julia --project=. scripts/gen_asym.jl -n 4 -m 4 -c 10 --input pncp_4x4.jld2 --output pncp_4x4_asym.jld2
+```
+
+| option | default | meaning |
+| --- | --- | --- |
+| `--count`, `-c` | 10 | Gram representations emitted per source form |
+| `--scale` | 1.0 | standard deviation of the Gram-freedom coefficients λ |
+| `--dim_A`, `-n` | 4 | dimension of subspace A |
+| `--dim_B`, `-m` | 4 | dimension of subspace B |
+| `--seed` | 0 | base RNG seed (batch `f` is seeded `Xoshiro(seed + f)`) |
+| `--input`, `-i` | `pncp_NxM.jld2` | source PnCP forms |
+| `--output`, `-o` | `pncp_NxM_asym.jld2` | output file |
+
+Note: the emitted representations preserve *real* block-positivity but not
+necessarily complex block-positivity (see `is_block_positive`), so they are not
+all guaranteed to be valid witnesses over ℂ.
 
 ### `compare_detection.jl`
 
@@ -112,6 +143,7 @@ julia --project=. -t auto scripts/compare_detection.jl --total 1000 --batch 200 
 | `--dim_B`, `-m` | 4 | dimension of subspace B |
 | `--level`, `-l` | 2 | DPS hierarchy level |
 | `--tol` | 1e-8 | detection tolerance |
+| `--ppt-invariant` | off | symmetrise off-diagonal blocks so each sampled state is invariant under partial transpose |
 | `--forms`, `-f` | `pncp_NxM.jld2` | pre-generated PnCP forms |
 | `--output`, `-o` | `detection_NxM.jld2` | output file |
 

@@ -46,6 +46,9 @@ function _parse_args()
             help = "Detection tolerance"
             arg_type = Float64
             default = 1e-8
+        "--ppt-invariant"
+            help = "Symmetrise off-diagonal blocks so each sampled state is invariant under partial transpose"
+            action = :store_true
         "--forms", "-f"
             help = "Path to pre-generated PnCP forms (default: pncp_NxM.jld2)"
             arg_type = String
@@ -88,6 +91,7 @@ function main()
     m = args["dim_B"]
     level = args["level"]
     tol = args["tol"]
+    ppt_invariant = args["ppt-invariant"]
     forms_path = isempty(args["forms"]) ? "pncp_$(n)x$(m).jld2" : args["forms"]
     filename = isempty(args["output"]) ? "detection_$(n)x$(m).jld2" : args["output"]
 
@@ -100,7 +104,7 @@ function main()
     # kept when at least one criterion certifies entanglement; every score is
     # recorded so the methods can be compared afterwards.
     function trial(rng)
-        state = rand_ppt(n, m; rng = rng)
+        state = rand_ppt(n, m; rng = rng, ppt_invariant = ppt_invariant)
         robustness, _ = entanglement_robustness(state, [n, m], level; solver = Mosek.Optimizer)
         min_dot, dot_idx = findmin(tr.(forms .* Ref(state)))
         min_amp, amp_idx = findmin(minimum.(real.(eigvals.(ampliation.(forms, Ref(state), n, m)))))
@@ -120,7 +124,7 @@ function main()
     generate_dataset(
         filename, args["total"], args["batch"], trial;
         T = DetectionResult,
-        meta = Dict("dim_A" => n, "dim_B" => m, "level" => level, "tol" => tol, "forms" => forms_path),
+        meta = Dict("dim_A" => n, "dim_B" => m, "level" => level, "tol" => tol, "ppt_invariant" => ppt_invariant, "forms" => forms_path),
         label = "detected entangled PPT states",
     )
 

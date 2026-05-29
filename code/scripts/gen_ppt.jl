@@ -29,6 +29,9 @@ function _parse_args()
             help = "Entanglement tolerance: keep states with robustness > tol"
             arg_type = Float64
             default = 1e-8
+        "--ppt-invariant"
+            help = "Symmetrise off-diagonal blocks so each state is invariant under partial transpose"
+            action = :store_true
         "--output", "-o"
             help = "Output filename (default: ppt_entangled_NxM.jld2)"
             arg_type = String
@@ -42,19 +45,20 @@ function main()
     n = args["dim_A"]
     m = args["dim_B"]
     tol = args["tol"]
+    ppt_invariant = args["ppt-invariant"]
     filename = isempty(args["output"]) ? "ppt_entangled_$(n)x$(m).jld2" : args["output"]
 
     # one trial = one random PPT state; accepted only when the level-2 DPS
     # relaxation certifies entanglement (robustness above tol).
     function trial(rng)
-        state = rand_ppt(n, m; rng = rng)
+        state = rand_ppt(n, m; rng = rng, ppt_invariant = ppt_invariant)
         robustness, _ = entanglement_robustness(state, [n, m], 2; solver = Mosek.Optimizer)
         return robustness > tol ? Matrix{Float64}(state) : nothing
     end
 
     generate_dataset(
         filename, args["total"], args["batch"], trial;
-        meta = Dict("dim_A" => n, "dim_B" => m, "tol" => tol),
+        meta = Dict("dim_A" => n, "dim_B" => m, "tol" => tol, "ppt_invariant" => ppt_invariant),
         label = "entangled PPT states",
     )
 end

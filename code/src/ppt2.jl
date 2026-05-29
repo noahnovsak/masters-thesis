@@ -10,7 +10,8 @@ using SumOfSquares: SOSModel, SOSCone, gram_matrix
 
 import Ket: partial_transpose
 
-export pncp_mat, ampliation, rand_ppt, rand_sep, rand_psd, is_ppt, antisymmetric_projector
+export pncp_mat, ampliation, rand_ppt, rand_sep, rand_psd, is_ppt,
+    antisymmetric_projector, gram_freedom, is_block_positive
 
 
 ⊗(a::AbstractMatrix, b::AbstractMatrix) = kron(a, b)
@@ -56,6 +57,65 @@ function poly2mat(poly::AbstractPolynomial, n::Int, m::Int)
         end
     end
     return M
+end
+
+# ── Gram-matrix freedom ─────────────────────────────────────────────────────────
+
+"""
+    gram_freedom(n, m) -> Vector{Matrix{Float64}}
+
+Basis of the space `L` of symmetric `(n·m)×(n·m)` matrices that vanish on the real
+Segre variety: `zᵀ N z ≡ 0` for every product vector `z = x ⊗ y`. The Gram matrix
+of a biquadratic form is unique only up to `L`, so `poly2mat`'s output `M₀` and
+every representative `Mλ = M₀ + Σ λα·N[α]` describe the *same* polynomial.
+
+The basis encodes the Segre (2×2 minor) relations
+`(xᵢyⱼ)(xₖyₗ) − (xᵢyₗ)(xₖyⱼ) ≡ 0`; there are `binomial(n,2)·binomial(m,2)` of them
+and `L ≅ ⋀²(ℝⁿ) ⊗ ⋀²(ℝᵐ)`. This is the same construction used inside
+`non_sos_form` (the `E(i,j,k,l) - E(i,l,k,j)` span).
+
+Caveat: these vanish on *real* product vectors only. On a complex product vector
+`⟨x⊗y| N |x⊗y⟩` is generally nonzero, so adding `L` preserves real block-positivity
+but *not* complex block-positivity (the genuine witness condition — see
+[`is_block_positive`](@ref)).
+"""
+function gram_freedom(n::Int, m::Int)
+    I_n, I_m = Matrix{Float64}(I, n, n), Matrix{Float64}(I, m, m)
+    e(i, j) = kron(I_n[:, i], I_m[:, j])          # basis vector for the monomial xᵢ yⱼ
+    basis = Matrix{Float64}[]
+    for i in 1:n-1, j in 1:m-1, k in i+1:n, l in j+1:m
+        a, b, c, d = e(i, j), e(k, l), e(i, l), e(k, j)
+        push!(basis, (a*b' + b*a') - (c*d' + d*c'))
+    end
+    return basis
+end
+
+"""
+    is_block_positive(W, n, m; field=:complex, trials=100_000, atol=1e-9, rng) -> Bool
+
+Monte-Carlo check that `W` is block-positive on the `[n, m]` bipartition, i.e.
+`⟨x⊗y| W |x⊗y⟩ ≥ -atol` for all product vectors. With `field=:complex` (the genuine
+entanglement-witness / positive-map condition) product vectors range over
+`ℂⁿ ⊗ ℂᵐ`; with `field=:real` over `ℝⁿ ⊗ ℝᵐ`.
+
+The sampler returns `false` as soon as it finds a violating product vector, so it
+can *disprove* block-positivity but never certify it — a certificate needs an
+SOS / Positivstellensatz SDP. Note that real block-positivity is invariant under
+the [`gram_freedom`](@ref) directions while complex block-positivity is not, so
+`field=:real` cannot tell representatives `Mλ` apart.
+"""
+function is_block_positive(W::AbstractMatrix, n::Int, m::Int;
+                           field::Symbol=:complex, trials::Int=100_000,
+                           atol::Real=1e-9, rng=Random.GLOBAL_RNG)
+    for _ in 1:trials
+        z = if field === :complex
+            kron(randn(rng, ComplexF64, n), randn(rng, ComplexF64, m))
+        else
+            kron(randn(rng, n), randn(rng, m))
+        end
+        real(z' * W * z) < -atol && return false
+    end
+    return true
 end
 
 # ── Map composition ───────────────────────────────────────────────────────────
