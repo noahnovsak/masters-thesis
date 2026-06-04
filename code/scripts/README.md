@@ -147,13 +147,49 @@ julia --project=. -t auto scripts/compare_detection.jl --total 1000 --batch 200 
 | `--forms`, `-f` | `pncp_NxM.jld2` | pre-generated PnCP forms |
 | `--output`, `-o` | `detection_NxM.jld2` | output file |
 
+### `gen_witness_ppt.jl`
+
+A third entanglement test, dual to the trace witness. Instead of fixing a state
+and scanning the form library for the most negative `tr(W · ρ)`, it fixes each
+witness `W` and solves the SDP
+
+```
+minimise   tr(W · ρ)
+subject to ρ ⪰ 0,  tr(ρ) = 1,  ρ^Γ ⪰ 0   (Hermitian, PSD, unit-trace, PPT)
+```
+
+over the whole PPT cone (`ppt2.min_ppt_witness`). Since every separable state
+gives `tr(W · ρ) ≥ 0`, a negative optimum certifies the minimiser as a PPT
+**entangled** (bound entangled) state that `W` detects — so the run both measures
+each witness's detection strength and emits the bound entangled states it
+witnesses. Iterates over a pre-generated form library in parallel; requires
+`gen_pncp.jl` output. The companion notebook
+[`notebooks/sdp_witness_ppt.ipynb`](../notebooks/sdp_witness_ppt.ipynb) drives the
+same SDP interactively.
+
+```sh
+julia --project=. -t auto scripts/gen_witness_ppt.jl -n 4 -m 4 --tol 1e-8
+```
+
+| option | default | meaning |
+| --- | --- | --- |
+| `--dim_A`, `-n` | 4 | dimension of subspace A |
+| `--dim_B`, `-m` | 4 | dimension of subspace B |
+| `--tol` | 1e-8 | keep witnesses whose optimum is below `-tol` |
+| `--limit`, `-L` | 0 | process only the first L witnesses (0 = all) |
+| `--forms`, `-f` | `pncp_NxM.jld2` | pre-generated PnCP forms |
+| `--output`, `-o` | `witness_ppt_NxM.jld2` | output file |
+
 ## Output format
 
 Generated `.jld2` files store data under `batch_<id>` keys and statistics under
 `meta/*` (`dim_A`, `dim_B`, `tol`, and per-batch `batch_<id>_attempted` /
 `batch_<id>_accepted` counts). The generators store a `Vector{Matrix}` per
 batch; `compare_detection.jl` stores a `Vector` of named tuples
-`(state, robustness, min_dot, min_amp, dot_idx, amp_idx)` instead.
+`(state, robustness, min_dot, min_amp, dot_idx, amp_idx)` instead, and
+`gen_witness_ppt.jl` a `Vector` of `(witness_idx, value, state)` (the
+witness's index in the form library, its optimum `tr(W · ρ)`, and the certified
+PPT entangled state as a `Matrix{ComplexF64}`).
 
 ## Resumability and reproducibility
 

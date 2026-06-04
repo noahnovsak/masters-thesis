@@ -12,7 +12,7 @@ import Ket: partial_transpose, entanglement_robustness   # `using Ket` would cla
 
 export pncp_mat, ampliation, rand_ppt, rand_sep, rand_psd, is_ppt,
     antisymmetric_projector, gram_freedom, is_block_positive,
-    detect_trace, detect_ampliation, detect_dps, test_ppt2,
+    detect_trace, detect_ampliation, detect_dps, test_ppt2, min_ppt_witness,
     load_batches, load_meta, batch_id_of,
     completed_batches, batch_counts, write_meta!, sample_batch, generate_dataset
 
@@ -307,6 +307,50 @@ function test_ppt2(ρ, σ=ρ; n::Int=4, m::Int=4, compose::Bool=true,
     else
         error("mode must be :sequential or :parallel, got $(mode)")
     end
+end
+
+# ── Witness-restricted PPT minimisation ──────────────────────────────────────
+#
+# The convex dual of `detect_trace`. There the state τ is fixed and we scan a
+# finite library of witnesses for the most negative `tr(W·τ)`; here a single
+# block-positive witness `W` is fixed and we search the *whole* PPT cone for the
+# state it detects most strongly. A negative optimum certifies a PPT entangled
+# (bound entangled) state — another way of testing/generating entanglement.
+
+"""
+    min_ppt_witness(W, n, m; tol=1e-8, verbose=false) -> (value, state, detected)
+
+Minimise `tr(W·ρ)` over density operators `ρ` on the `[n, m]` bipartition that are
+Hermitian, PSD, unit-trace, and PPT (partial transpose over the second subsystem
+PSD), via an SDP. `W` is a fixed `(n·m)×(n·m)` block-positive PnCP witness; `ρ` is
+the variable.
+
+Every separable state `σ` satisfies `tr(W·σ) ≥ 0`, so a negative optimum
+`value < -tol` certifies the minimiser `state` as a PPT *entangled* (bound
+entangled) state witnessed by `W`, and sets `detected`. This is dual to
+[`detect_trace`](@ref): that fixes the state and ranges the witness over a finite
+library; this fixes the witness and ranges the state over the PPT cone.
+
+`state` is returned as a `Hermitian{ComplexF64}`. For a real-symmetric `W` the
+optimum is already attained on the real-symmetric slice, so ranging `ρ` over
+complex Hermitian operators (as quantum states demand) costs no detection power.
+"""
+function min_ppt_witness(W::AbstractMatrix, n::Int, m::Int; tol=1e-8, verbose=false)
+    d = n * m
+    size(W) == (d, d) || throw(DimensionMismatch(
+        "W must be $(d)×$(d) for the [$n, $m] bipartition, got $(size(W))"))
+
+    model = Model(Mosek.Optimizer)
+    verbose || set_silent(model)
+
+    @variable(model, ρ[1:d, 1:d] in HermitianPSDCone())                 # ρ ⪰ 0, Hermitian
+    @constraint(model, real(tr(ρ)) == 1)                                # unit trace
+    @constraint(model, Hermitian(partial_transpose(Matrix(ρ), 2, [n, m])) in HermitianPSDCone())  # PPT
+    @objective(model, Min, real(tr(W * ρ)))
+
+    optimize!(model)
+    v = objective_value(model)
+    return (value=v, state=value.(ρ), detected=v < -tol)
 end
 
 # All dataset I/O (readers + the batch-generation engine the scripts drive).
