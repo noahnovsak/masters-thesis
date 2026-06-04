@@ -3,6 +3,7 @@
 
 # Data
 data/*.mat
+tested_*.csv
 
 # Julia
 Manifest*.toml

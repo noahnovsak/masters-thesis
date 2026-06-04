@@ -244,7 +244,10 @@ end
 # robustness > tol.
 
 "Linear-witness criterion: min `tr(form·τ)` over `forms`."
-detect_trace(τ, forms; tol=1e-8) = let (v, i) = findmin(tr.(forms .* Ref(τ)))
+# `tr(form·τ)` is real for a real-symmetric witness and Hermitian τ; `real` both
+# drops the numerical imaginary part and keeps `findmin` well-defined when τ is
+# complex (e.g. the Hermitian PPT states from `min_ppt_witness`).
+detect_trace(τ, forms; tol=1e-8) = let (v, i) = findmin(real.(tr.(forms .* Ref(τ))))
     (value=v, idx=i, detected=v < -tol)
 end
 

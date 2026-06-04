@@ -27,17 +27,21 @@ The SDP steps use Mosek, so a valid Mosek license must be available.
 
 ## Pipeline
 
-Run the two generators first, then the test:
+Run the generators first, then the test:
 
 ```sh
 # 1. PnCP witness maps  ->  pncp_4x4.jld2
 julia --project=. -t auto scripts/gen_pncp.jl --total 10000 --batch 200 -n 4 -m 4
 
-# 2. Entangled PPT states  ->  ppt_entangled_4x4.jld2
+# 2a. Entangled PPT states by random sampling  ->  ppt_entangled_4x4.jld2
 julia --project=. -t auto scripts/gen_ppt.jl --total 1000 --batch 200 -n 4 -m 4 --tol 1e-8
 
-# 3. Test PPT2 over all ordered pairs of states, using the forms as witnesses
-julia --project=. -t auto scripts/test_ppt2.jl -n 4 -m 4 --tol 1e-8
+# 2b. ...or one bound entangled state per witness  ->  witness_ppt_4x4.jld2
+julia --project=. -t auto scripts/gen_witness_ppt.jl -n 4 -m 4 --tol 1e-8
+
+# 3. Test PPT2 over ordered pairs of states, using the forms as witnesses.
+#    Incremental and resumable: run a slice at a time with --limit.
+julia --project=. -t auto scripts/test_ppt2.jl -n 4 -m 4 --tol 1e-8 --limit 1000
 ```
 
 ### `gen_pncp.jl`
@@ -72,22 +76,49 @@ entanglement (robustness `> --tol`).
 
 ### `test_ppt2.jl`
 
-Loads the pre-generated states and forms, then for **every ordered pair**
-`(i, j)` (including self-pairs — composition is not commutative) forms the
-composite `ampliation(states[i], states[j])` and checks it for entanglement via
-three tests: the minimum `tr(form · composite)` over all forms, the minimum
-eigenvalue of `ampliation(form, composite)` over all forms, and the level-2 DPS
-robustness SDP. A pair is flagged when any test exceeds `--tol`; its composite,
-witness, and best detecting forms are written to `result_<i>_<j>.jld2`.
+Loads the pre-generated states and forms, then for **ordered pairs** `(i, j)`
+(including self-pairs — composition is not commutative) forms the composite
+`ampliation(states[i], states[j])` and checks it for entanglement via three
+tests: the minimum `tr(form · composite)` over all forms and the minimum
+eigenvalue of `ampliation(form, composite)` over all forms — both cheap
+matrix scans over the form library — plus, only with `--with-dps`, the level-2
+DPS robustness SDP. A pair is detected when any active test exceeds `--tol`.
+
+The DPS SDP is much heavier than the witness criteria — a semidefinite program
+per pair — so it is **off by default**; leave it off for bulk scanning and turn it
+on to cross-check specific pairs. The states are stored complex but are
+real-symmetric up to SDP noise, so they are loaded as real, which keeps the DPS
+solve on the real PSD cone instead of the (double-dimension) complex Hermitian one
+— ≈20× faster and ≈9× less memory (~2 min vs ~47 min, ~31 GB vs ~283 GB for 64
+pairs on 8 threads).
+
+The state pool is large (`witness_ppt_4x4.jld2` alone is 10000 states, i.e. 10⁸
+ordered pairs), so the run is **incremental and resumable**. Every tested pair —
+detected or not — is appended as one row to a CSV ledger
+`tested_<states>.csv`, recording the outcome and each criterion's score (see
+[Output format](#output-format)). A rerun reads the ledger back, skips the pairs
+already in it, and continues; `--limit` caps how many new pairs a single run
+tests, and `--max-states` caps the pool to the first `K` states (`K*K` pairs).
+Detected pairs additionally get a `result_<i>_<j>.jld2` with the composite,
+witness, and best detecting forms.
+
+Accepts either state-file layout: the bare matrices from `gen_ppt.jl` or the
+`(witness_idx, value, state)` tuples from `gen_witness_ppt.jl` (the default).
 
 | option | default | meaning |
 | --- | --- | --- |
 | `--dim_A`, `-n` | 4 | dimension of subspace A |
 | `--dim_B`, `-m` | 4 | dimension of subspace B |
 | `--tol` | 1e-8 | detection tolerance |
-| `--states`, `-s` | `ppt_entangled_NxM.jld2` | pre-generated PPT states |
+| `--states`, `-s` | `witness_ppt_NxM.jld2` | pre-generated PPT states |
 | `--forms`, `-f` | `pncp_NxM.jld2` | pre-generated PnCP forms |
-| `--output-dir`, `-o` | `.` | directory for results and the run log |
+| `--output-dir`, `-o` | `.` | directory for the ledger and result files |
+| `--ledger` | `tested_<states>.csv` | ledger filename (relative to the output dir) |
+| `--limit`, `-L` | 0 | test at most this many new pairs this run (0 = all remaining) |
+| `--max-states`, `-k` | 0 | use only the first K states (0 = all) |
+| `--with-dps` | off | also run the level-2 DPS SDP per pair (an SDP each — much heavier than the witness criteria) |
+
+The `dps_value` ledger column is `nan` for pairs tested without `--with-dps`.
 
 ### `gen_asym.jl`
 
@@ -190,6 +221,15 @@ batch; `compare_detection.jl` stores a `Vector` of named tuples
 `gen_witness_ppt.jl` a `Vector` of `(witness_idx, value, state)` (the
 witness's index in the form library, its optimum `tr(W · ρ)`, and the certified
 PPT entangled state as a `Matrix{ComplexF64}`).
+
+`test_ppt2.jl` instead writes a plain-CSV **ledger** `tested_<states>.csv` — one
+row per tested ordered pair, header
+`i,j,detected,trace_value,trace_idx,amp_value,amp_idx,dps_value,eigmin_rho,eigmin_pt`
+— which is the resume state (pairs already present are skipped) and the full
+record of which compositions were tried and whether entanglement was verified.
+Each detected pair also gets a `result_<i>_<j>.jld2` holding the composite
+`state`, the DPS `witness`, and the best trace/ampliation forms with their
+indices (`dot_idx`/`dot_mat`, `amp_idx`/`amp_mat`).
 
 ## Resumability and reproducibility
 
