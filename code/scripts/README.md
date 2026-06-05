@@ -211,6 +211,46 @@ julia --project=. -t auto scripts/gen_witness_ppt.jl -n 4 -m 4 --tol 1e-8
 | `--forms`, `-f` | `pncp_NxM.jld2` | pre-generated PnCP forms |
 | `--output`, `-o` | `witness_ppt_NxM.jld2` | output file |
 
+### `gen_witness_ppt2.jl`
+
+Sharpens `gen_witness_ppt.jl` from the whole PPT cone down to the **composition
+manifold** — the PPT² setting itself. Instead of minimising `tr(W · ρ)` over an
+arbitrary PPT state `ρ`, it minimises `tr(W · ampliation(ρ1, ρ2))` over *pairs* of
+PPT maps `ρ1, ρ2` (`ppt2.min_ppt2_witness`):
+
+```
+minimise   tr(W · composite),   composite = ampliation(ρ1, ρ2)
+subject to ρ1, ρ2 ⪰ 0,  tr = 1,  ρ^Γ ⪰ 0   (each factor Hermitian, PSD, unit-trace, PPT)
+```
+
+`ampliation` is bilinear in `(ρ1, ρ2)`, so this is not a single SDP; it is solved
+by **see-saw** (freeze one factor, optimise the other, alternate) from
+`--restarts` random PPT starts. A composition of PPT maps is itself PPT, so a
+negative optimum exhibits a PPT *and* entangled composition — a **PPT²
+counterexample** witnessed by `W`. Because see-saw only finds a local optimum, a
+non-negative result is supporting evidence, not proof; `gen_witness_ppt.jl` (the
+whole PPT cone) is the convex relaxation / lower bound. Each witness `i` is seeded
+`Xoshiro(--seed + i)`, so the run is reproducible and independent of thread count.
+Requires `gen_pncp.jl` output; the companion notebook
+[`notebooks/sdp_witness_ppt.ipynb`](../notebooks/sdp_witness_ppt.ipynb) drives the
+underlying SDPs interactively.
+
+```sh
+julia --project=. -t auto scripts/gen_witness_ppt2.jl -n 4 -m 4 --tol 1e-8 --restarts 16 --max_iter 40
+```
+
+| option | default | meaning |
+| --- | --- | --- |
+| `--dim_A`, `-n` | 4 | dimension of subspace A |
+| `--dim_B`, `-m` | 4 | dimension of subspace B |
+| `--tol` | 1e-8 | keep witnesses whose optimum is below `-tol` |
+| `--restarts` | 16 | see-saw random restarts per witness |
+| `--max_iter` | 40 | max alternating SDP steps per restart |
+| `--seed` | 0 | base RNG seed (witness `i` uses `Xoshiro(seed + i)`) |
+| `--limit`, `-L` | 0 | process only the first L witnesses (0 = all) |
+| `--forms`, `-f` | `pncp_NxM.jld2` | pre-generated PnCP forms |
+| `--output`, `-o` | `witness_ppt2_NxM.jld2` | output file |
+
 ## Output format
 
 Generated `.jld2` files store data under `batch_<id>` keys and statistics under
@@ -220,7 +260,12 @@ batch; `compare_detection.jl` stores a `Vector` of named tuples
 `(state, robustness, min_dot, min_amp, dot_idx, amp_idx)` instead, and
 `gen_witness_ppt.jl` a `Vector` of `(witness_idx, value, state)` (the
 witness's index in the form library, its optimum `tr(W · ρ)`, and the certified
-PPT entangled state as a `Matrix{ComplexF64}`).
+PPT entangled state as a `Matrix{ComplexF64}`). `gen_witness_ppt2.jl` stores a
+`Vector` of `(witness_idx, value, rho1, rho2)` for the detected compositions only
+(the two PPT factors whose composition is the counterexample candidate), plus
+`meta/all_values` — every witness's see-saw optimum, for the boundary-distance
+distribution — alongside the `meta/restarts`, `meta/max_iter`, and `meta/seed`
+settings.
 
 `test_ppt2.jl` instead writes a plain-CSV **ledger** `tested_<states>.csv` — one
 row per tested ordered pair, header
