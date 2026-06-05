@@ -13,6 +13,7 @@ import Ket: partial_transpose, entanglement_robustness   # `using Ket` would cla
 export pncp_mat, ampliation, rand_ppt, rand_sep, rand_psd, is_ppt,
     antisymmetric_projector, gram_freedom, is_block_positive,
     detect_trace, detect_ampliation, detect_dps, test_ppt2, min_ppt_witness,
+    min_eig, has_negative_eig, has_negative_eig!,
     load_batches, load_meta, batch_id_of,
     completed_batches, batch_counts, write_meta!, sample_batch, generate_dataset
 
@@ -124,40 +125,53 @@ end
 # ── Map composition ───────────────────────────────────────────────────────────
 
 """
-    ampliation(A, B, n, m) -> Matrix
+    ampliation(A, B, n, m; system=2) -> Matrix
 
-Choi matrix of a map composition, computed as `(I_n ⊗ Φ_A)(B) = J(Φ_A ∘ Φ_B)`.
+Apply the map `Φ_A` (Choi matrix `A`) to one subsystem of `B`, an operator on the
+`[n, m] = kron(A_n, B_m)` bipartition (an `(n·m)×(n·m)` matrix).
 
-`B = J(Φ_B)` is the Choi matrix of `Φ_B : M_n → M_m`, an `(n·m)×(n·m)` matrix in
-the `[n, m] = kron(A_n, B_m)` ordering. `Φ_A` is applied to the second
-(dimension-`m`) subsystem, so `A = J(Φ_A)` is the Choi matrix of
-`Φ_A : M_m → M_r`, an `(m·r)×(m·r)` matrix in `[m, r]` ordering; the output
-dimension `r = size(A, 1) ÷ m` is inferred. The result is
-`J(Φ_A ∘ Φ_B) : M_n → M_r`, an `(n·r)×(n·r)` matrix in `[n, r]` ordering.
+- `system=2` (default): `(I_n ⊗ Φ_A)(B)`. `Φ_A` acts on the **second**
+  (dimension-`m`) subsystem, so `A = J(Φ_A : M_m → M_r)` is `(m·r)×(m·r)` in
+  `[m, r]` ordering, `r = size(A,1) ÷ m`, and the result is `(n·r)×(n·r)` in
+  `[n, r]` ordering. When `B = J(Φ_B : M_n → M_m)` this is the composition Choi
+  matrix `J(Φ_A ∘ Φ_B)` — the form used throughout the PPT² search (square
+  self-composition `ampliation(M, M, d, d)`, `n = m = r = d`).
 
-Rectangular dimensions are supported as long as the shared dimension `m`
-(`Φ_B`'s output and `Φ_A`'s input) matches — that is what makes the maps
-composable. The PPT² search uses the square self-composition
-`ampliation(M, M, d, d)` (`n = m = r = d`).
+- `system=1`: `(Φ_A ⊗ I_m)(B)`. `Φ_A` acts on the **first** (dimension-`n`)
+  subsystem, so `A = J(Φ_A : M_n → M_r)` is `(n·r)×(n·r)`, `r = size(A,1) ÷ n`,
+  and the result is `(r·m)×(r·m)` in `[r, m]` ordering. This is the leg dual to a
+  block-positive *witness*: for entanglement detection `(Φ_W ⊗ I)(ρ) ⊁ 0` is the
+  test consistent with `tr(W·ρ) < 0` (see [`detect_ampliation`](@ref)), whereas
+  `system=2` tests the opposite leg and need not agree with the witness.
+
+Rectangular dimensions are supported as long as `Φ_A`'s input dimension matches
+the chosen subsystem (`m` for `system=2`, `n` for `system=1`).
 """
-function ampliation(A::AbstractMatrix, B::AbstractMatrix, n::Int, m::Int)
+function ampliation(A::AbstractMatrix, B::AbstractMatrix, n::Int, m::Int; system::Int=2)
+    system == 1 || system == 2 || throw(ArgumentError("system must be 1 or 2, got $system"))
     size(B, 1) == n * m || throw(DimensionMismatch(
-        "B must be $(n*m)×$(n*m) for Φ_B: M_$n → M_$m, got $(size(B, 1))×$(size(B, 2))"))
-    size(A, 1) % m == 0 || throw(DimensionMismatch(
-        "A's dimension $(size(A, 1)) is not a multiple of m=$m (Φ_A's input)"))
-    r = size(A, 1) ÷ m
+        "B must be $(n*m)×$(n*m) for the [$n, $m] bipartition, got $(size(B, 1))×$(size(B, 2))"))
 
-    # gather B into blocks of its second (m) subsystem: Bmat[(a,b), (α,β)]
-    Bp = PermutedDimsArray(reshape(B, m, n, m, n), (1, 3, 2, 4))
-    Bmat = reshape(Bp, m*m, n*n)
-
-    # natural representation of Φ_A: natA[(k,l), (a,b)] = A[(a,k), (b,l)]
-    Ap = PermutedDimsArray(reshape(A, r, m, r, m), (1, 3, 2, 4))
-    natA = reshape(Ap, r*r, m*m)
-
-    C = reshape(natA * Bmat, r, r, n, n)            # (k, l, α, β)
-
-    return reshape(PermutedDimsArray(C, (1, 3, 2, 4)), n*r, n*r)
+    if system == 2                          # (I_n ⊗ Φ_A)(B): map on subsystem 2 (dim m)
+        size(A, 1) % m == 0 || throw(DimensionMismatch(
+            "A's dimension $(size(A, 1)) is not a multiple of m=$m (Φ_A's input on subsystem 2)"))
+        r = size(A, 1) ÷ m
+        # gather B by its second (m) subsystem; natA[(k,l),(a,b)] = A[(a,k),(b,l)]
+        Bmat = reshape(PermutedDimsArray(reshape(B, m, n, m, n), (1, 3, 2, 4)), m*m, n*n)
+        natA = reshape(PermutedDimsArray(reshape(A, r, m, r, m), (1, 3, 2, 4)), r*r, m*m)
+        C = reshape(natA * Bmat, r, r, n, n)            # (k, l, α, β)
+        return reshape(PermutedDimsArray(C, (1, 3, 2, 4)), n*r, n*r)
+    else                                    # (Φ_A ⊗ I_m)(B): map on subsystem 1 (dim n)
+        size(A, 1) % n == 0 || throw(DimensionMismatch(
+            "A's dimension $(size(A, 1)) is not a multiple of n=$n (Φ_A's input on subsystem 1)"))
+        r = size(A, 1) ÷ n
+        # gather B by its first (n) subsystem; natA[(k,l),(a,c)] = A[(a,k),(c,l)]
+        Bmat = reshape(PermutedDimsArray(reshape(B, m, n, m, n), (2, 4, 1, 3)), n*n, m*m)
+        natA = reshape(PermutedDimsArray(reshape(A, r, n, r, n), (1, 3, 2, 4)), r*r, n*n)
+        C = reshape(natA * Bmat, r, r, m, m)            # (k, l, b, d)
+        # output in [r, m] ordering: r-leg (k,l) slow, untouched m-leg (b,d) fast
+        return reshape(PermutedDimsArray(C, (3, 1, 4, 2)), r*m, r*m)
+    end
 end
 
 # ── Random states ──────────────────────────────────────────────────────────────
@@ -231,10 +245,50 @@ end
 symmetric_projector(d::Int)     = (I(d^2) + swap(d)) / 2
 antisymmetric_projector(d::Int) = (I(d^2) - swap(d)) / 2
 
-"""True if ρ is PPT (partial transpose has no eigenvalue below `-tol`)."""
+# ── Smallest-eigenvalue sign checks ───────────────────────────────────────────
+#
+# Detecting entanglement / non-PPT-ness only needs the SIGN of the smallest
+# eigenvalue, not its value. A Cholesky factorisation of `M + tol·I` (LAPACK
+# `potrf!`) decides that sign ~6× faster than a full `eigvals` on the 16×16
+# matrices of the PPT² search, so it is the primitive behind `is_ppt` and
+# `detect_ampliation`. `min_eig` is used only where the value itself is needed.
+
+"""
+    has_negative_eig!(M; tol=1e-8) -> Bool
+
+True iff `λ_min(M) < -tol`, via an in-place Cholesky of `M + tol·I` (`potrf!`,
+`info ≠ 0` ⟺ not positive-definite). Overwrites `M` (Hermitian/symmetric; only the
+upper triangle is read) — for hot loops that rebuild `M` each iteration.
+"""
+function has_negative_eig!(M::AbstractMatrix; tol::Real=1e-8)
+    @inbounds for i in axes(M, 1)
+        M[i, i] += tol
+    end
+    return last(LinearAlgebra.LAPACK.potrf!('U', M)) != 0
+end
+
+"""
+    has_negative_eig(M; tol=1e-8) -> Bool
+
+`λ_min(M) < -tol`, decided by Cholesky (see [`has_negative_eig!`](@ref)). Works on
+a copy, leaving `M` untouched.
+"""
+has_negative_eig(M::AbstractMatrix; tol::Real=1e-8) = has_negative_eig!(Matrix(M); tol=tol)
+
+"""
+    min_eig(M) -> Real
+
+Smallest eigenvalue of the Hermitian/symmetric `M` via the LAPACK selected-range
+routine (`eigvals(Hermitian(M), 1:1)`) — only the bottom eigenvalue, no full
+spectrum. Use when the value (not just its sign) is needed.
+"""
+min_eig(M::AbstractMatrix) = eigvals(Hermitian(Matrix(M)), 1:1)[1]
+
+"""True if ρ is PPT: the partial transpose has no eigenvalue below `-tol`. Decided
+by the Cholesky sign check [`has_negative_eig`](@ref)."""
 function is_ppt(ρ::AbstractMatrix, dA::Int, dB::Int; tol=1e-8)
     PT = partial_transpose(Matrix(ρ), 2, [dA, dB])
-    return eigmin(Hermitian(PT)) ≥ -tol
+    return !has_negative_eig(PT; tol=tol)
 end
 
 # ── Entanglement detection ────────────────────────────────────────────────────
@@ -244,15 +298,34 @@ end
 # robustness > tol.
 
 "Linear-witness criterion: min `tr(form·τ)` over `forms`."
-detect_trace(τ, forms; tol=1e-8) = let (v, i) = findmin(tr.(forms .* Ref(τ)))
+# `tr(form·τ)` is real for a real-symmetric witness and Hermitian τ; `real` both
+# drops the numerical imaginary part and keeps `findmin` well-defined when τ is
+# complex (e.g. the Hermitian PPT states from `min_ppt_witness`).
+detect_trace(τ, forms; tol=1e-8) = let (v, i) = findmin(real.(tr.(forms .* Ref(τ))))
     (value=v, idx=i, detected=v < -tol)
 end
 
-"Min eigenvalue of `(I⊗form)(τ)` over `forms`."
-detect_ampliation(τ, forms, n, m; tol=1e-8) =
-    let (v, i) = findmin(minimum.(real.(eigvals.(ampliation.(forms, Ref(τ), n, m)))))
-        (value=v, idx=i, detected=v < -tol)
+"""
+    detect_ampliation(τ, forms, n, m; tol=1e-8, system=1)
+
+Positive-map criterion: scan `forms` for one whose ampliation `(Φ_form ⊗ I)(τ)`
+(subsystem `system=1`, the leg dual to the block-positive witness — see
+[`ampliation`](@ref)) has an eigenvalue below `-tol`. Detection uses the Cholesky
+sign check [`has_negative_eig`](@ref); `value` is the most negative eigenvalue
+among the forms that fire (`0.0` if none), computed exactly (via [`min_eig`](@ref))
+only for those, and `idx` is the firing form (`0` if none).
+"""
+function detect_ampliation(τ, forms, n, m; tol=1e-8, system::Int=1)
+    best = 0.0
+    idx = 0
+    for (i, W) in enumerate(forms)
+        M = ampliation(W, τ, n, m; system=system)
+        has_negative_eig(M; tol=tol) || continue
+        v = min_eig(M)
+        v < best && (best = v; idx = i)
     end
+    return (value=best, idx=idx, detected=idx != 0)
+end
 
 "Level-`level` DPS robustness from Ket; `witness` is Ket's entanglement witness."
 detect_dps(τ, n, m; level=2, tol=1e-8) =
