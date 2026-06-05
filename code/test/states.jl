@@ -64,3 +64,20 @@ end
     a = randn(2); b = randn(2)
     @test is_ppt(kron(a * a', b * b'), 2, 2)
 end
+
+@testset "min_eig / has_negative_eig vs eigvals" begin
+    rng = MersenneTwister(11)
+    for _ in 1:20
+        d = rand(rng, 2:8)
+        S = randn(rng, d, d); H = Symmetric(S + S')                 # real symmetric
+        @test min_eig(H) ≈ eigmin(Matrix(H))
+        @test has_negative_eig(H; tol=1e-9) == (eigmin(Matrix(H)) < -1e-9)
+        Z = randn(rng, ComplexF64, d, d); G = Hermitian(Z + Z')     # complex Hermitian
+        @test min_eig(G) ≈ eigmin(Matrix(G))
+        @test has_negative_eig(G; tol=1e-9) == (eigmin(Matrix(G)) < -1e-9)
+    end
+    @test has_negative_eig([2.0 0; 0 -1.0]; tol=1e-9)               # λ_min = -1 < -tol
+    @test !has_negative_eig([2.0 0; 0 0.5]; tol=1e-9)               # λ_min = 0.5 ≥ -tol
+    M = [2.0 0; 0 -1.0]; has_negative_eig!(M)                       # in-place overwrites M
+    @test M != [2.0 0; 0 -1.0]
+end

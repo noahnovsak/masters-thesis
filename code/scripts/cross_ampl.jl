@@ -36,7 +36,10 @@ const SW = SUB1 ? Matrix{ComplexF64}(ppt2.swap(n)) : Matrix{ComplexF64}(I, n*m, 
 Bms   = Vector{Matrix{ComplexF64}}(undef, S)
 @threads for s in 1:S; Bms[s]=bmat(SW * Matrix{ComplexF64}(ws[s].state) * SW); end
 
-# Build M = (I⊗Φ)(ρ) into preallocated Mbuf from natA (form) and Bm (state).
+# Build M = (Φ⊗I)(ρ) = ampliation(form, ρ; system=1) into preallocated Mbuf from
+# the form's natural rep natA and the regrouped state Bm. Since the Bms below hold
+# the SWAPPED states (SW·ρ·SW), the standard (I⊗Φ) layout used here equals the
+# system=1 (map on subsystem A) ampliation — the leg dual to the trace witness.
 @inline function buildM!(Cbuf, Mbuf, natA, Bm)
     mul!(Cbuf, natA, Bm)                           # C[(k,l),(α,β)]
     @inbounds for β in 1:n, l in 1:r, α in 1:n, k in 1:r
@@ -45,17 +48,12 @@ Bms   = Vector{Matrix{ComplexF64}}(undef, S)
     return Mbuf
 end
 
-# Fast path: is λ_min(M) ≥ −TOL?  Test M+TOL·I ≻ 0 by in-place Cholesky (potrf!,
-# ~6× cheaper than an eigendecomposition and allocation-free). Destroys Mbuf.
-@inline function amp_notdetected!(Cbuf, Mbuf, natA, Bm)
-    buildM!(Cbuf, Mbuf, natA, Bm)
-    @inbounds for i in 1:n*r; Mbuf[i, i] += TOL; end
-    _, info = LinearAlgebra.LAPACK.potrf!('U', Mbuf)
-    return info == 0                               # true ⟺ not detected
-end
+# Detection via the Cholesky sign check (ppt2.has_negative_eig!, ~6× cheaper than
+# an eigendecomposition; both destroy Mbuf, which buildM! rebuilds each call).
+@inline amp_notdetected!(Cbuf, Mbuf, natA, Bm) = !has_negative_eig!(buildM!(Cbuf, Mbuf, natA, Bm); tol=TOL)
 
-# Exact smallest eigenvalue (only used for the rare detected pairs + self pair).
-@inline amp_exact!(Cbuf, Mbuf, natA, Bm) = eigvals!(Hermitian(buildM!(Cbuf, Mbuf, natA, Bm)))[1]
+# Exact smallest eigenvalue (only the rare detected pairs + the self pair).
+@inline amp_exact!(Cbuf, Mbuf, natA, Bm) = min_eig(buildM!(Cbuf, Mbuf, natA, Bm))
 
 # ── resume from checkpoint ────────────────────────────────────────────────────
 amp_self  = fill(NaN, S); amp_minv = fill(NaN, S)
