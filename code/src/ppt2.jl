@@ -13,6 +13,7 @@ import Ket: partial_transpose, entanglement_robustness   # `using Ket` would cla
 export pncp_mat, ampliation, rand_ppt, rand_sep, rand_psd, is_ppt,
     antisymmetric_projector, gram_freedom, is_block_positive,
     detect_trace, detect_ampliation, detect_dps, test_ppt2, min_ppt_witness,
+    min_ppt2_witness,
     load_batches, load_meta, batch_id_of,
     completed_batches, batch_counts, write_meta!, sample_batch, generate_dataset
 
@@ -351,6 +352,105 @@ function min_ppt_witness(W::AbstractMatrix, n::Int, m::Int; tol=1e-8, verbose=fa
     optimize!(model)
     v = objective_value(model)
     return (value=v, state=value.(ρ), detected=v < -tol)
+end
+
+# ── Witness-restricted PPT² composition minimisation (see-saw) ────────────────
+#
+# Like `min_ppt_witness`, but restricts the search to the states that actually
+# arise as a *composition* of two PPT maps — the PPT² setting itself — rather than
+# the whole PPT cone. The tested operator is `composite = ampliation(ρ1, ρ2)`,
+# which is *bilinear* in (ρ1, ρ2): the joint minimisation is a non-convex bilinear
+# matrix inequality, not an SDP. We solve it by see-saw (alternating SDPs), the
+# same scheme as `min_xy_form`: freeze one factor so the composite is affine in
+# the other, minimise that SDP, swap, and repeat from random PPT restarts.
+
+"""
+    min_ppt2_witness(W, n, m; restarts=16, max_iter=40, tol=1e-8, verbose=false, rng)
+        -> (value, ρ1, ρ2, composite, detected)
+
+See-saw search for a PPT² counterexample detected by a fixed block-positive
+witness `W`. Minimise `tr(W · composite)`, where
+`composite = ampliation(ρ1, ρ2, n, m)` is the Choi matrix of a composition
+`Φ_1 ∘ Φ_2`, over Hermitian, PSD, unit-trace, PPT Choi matrices `ρ1`, `ρ2` on the
+`[n, m]` bipartition. `n == m` is required (square Choi) so the composite lives on
+the same space as `W`.
+
+A composition of PPT maps is itself PPT, so a **negative** optimum
+`value < -tol` exhibits a composition `Φ_1 ∘ Φ_2` of PPT maps whose Choi matrix is
+PPT *and* entangled (detected by `W`) — i.e. a **counterexample to the PPT²
+conjecture**, witnessed by `W`.
+
+`ampliation(ρ1, ρ2, …)` is bilinear in `(ρ1, ρ2)`, so the joint problem is a
+non-convex bilinear matrix inequality, not an SDP. It is solved by **see-saw**:
+freeze `ρ2` and minimise over `ρ1` (an SDP — the composite is then affine in
+`ρ1`), freeze `ρ1` and minimise over `ρ2`, and alternate to convergence from
+`restarts` random PPT starts, the same scheme as [`min_xy_form`](@ref). The
+returned `value` is therefore only a *local* optimum: a negative one is a genuine
+certificate, but a non-negative one does not rule out a counterexample for `W`.
+The convex relaxation [`min_ppt_witness`](@ref) — minimising over the *whole* PPT
+cone — is a lower bound, so if *it* is `≥ 0` no composition can be negative either.
+
+The composite's own PSD/PPT constraints are dropped because they hold
+automatically for a composition of PPT maps; only the two factors are constrained.
+"""
+function min_ppt2_witness(W::AbstractMatrix, n::Int, m::Int;
+                          restarts::Int=16, max_iter::Int=40, tol=1e-8,
+                          verbose::Bool=false, rng=Random.GLOBAL_RNG)
+    d = n * m
+    n == m || throw(ArgumentError(
+        "min_ppt2_witness needs n == m (square Choi) so the composite matches W; got n=$n, m=$m"))
+    size(W) == (d, d) || throw(DimensionMismatch(
+        "W must be $(d)×$(d) for the [$n, $m] bipartition, got $(size(W))"))
+
+    # One persistent PPT-cone model per factor (Φ_1 ⇒ ρ1, Φ_2 ⇒ ρ2). Only the
+    # bilinear objective is rebuilt each half-step, with the other factor frozen
+    # to its current numeric value, which makes that half an honest SDP.
+    function ppt_factor()
+        model = Model(Mosek.Optimizer)
+        set_silent(model)
+        @variable(model, ρ[1:d, 1:d] in HermitianPSDCone())                 # ρ ⪰ 0, Hermitian
+        @constraint(model, real(tr(ρ)) == 1)                                # unit trace
+        @constraint(model, Hermitian(partial_transpose(Matrix(ρ), 2, [n, m])) in HermitianPSDCone())  # PPT
+        return model, ρ
+    end
+    modelA, ρ1 = ppt_factor()
+    modelB, ρ2 = ppt_factor()
+
+    best_val = Inf
+    best_ρ1 = Matrix{ComplexF64}(I, d, d) / d
+    best_ρ2 = Matrix{ComplexF64}(I, d, d) / d
+
+    for r in 1:restarts
+        ρ2cur = rand_ppt(n, m; rng=rng)
+        ρ2cur = ρ2cur / tr(ρ2cur)                                           # unit-trace PPT start
+        ρ1cur = best_ρ1
+        prev = Inf
+        for it in 1:max_iter
+            # optimise Φ_1 with Φ_2 frozen: composite affine in ρ1
+            @objective(modelA, Min, real(tr(W * ampliation(Matrix(ρ1), ρ2cur, n, m))))
+            optimize!(modelA)
+            ρ1cur = Matrix(value.(ρ1))
+
+            # optimise Φ_2 with Φ_1 frozen
+            @objective(modelB, Min, real(tr(W * ampliation(ρ1cur, Matrix(ρ2), n, m))))
+            optimize!(modelB)
+            ρ2cur = Matrix(value.(ρ2))
+
+            val = objective_value(modelB)
+            verbose && println("restart=$r iter=$it value=$val")
+            abs(prev - val) < tol && break
+            prev = val
+        end
+
+        val = real(tr(W * ampliation(ρ1cur, ρ2cur, n, m)))
+        if val < best_val
+            best_val, best_ρ1, best_ρ2 = val, ρ1cur, ρ2cur
+        end
+    end
+
+    composite = Hermitian(ampliation(best_ρ1, best_ρ2, n, m))
+    return (value=best_val, ρ1=best_ρ1, ρ2=best_ρ2, composite=composite,
+            detected=best_val < -tol)
 end
 
 # All dataset I/O (readers + the batch-generation engine the scripts drive).
