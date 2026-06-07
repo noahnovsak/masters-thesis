@@ -100,6 +100,11 @@ function main()
     # count. A composition is detected (and kept as a PPT² counterexample candidate)
     # when the optimum drops below -tol. `all_values` records every witness's
     # optimum for the boundary-distance distribution, even the (expected) non-hits.
+    # Warm up the see-saw SDP path single-threaded before the @threads loop so the
+    # workers don't contend on Julia's codegen lock compiling it concurrently.
+    println("Warming up the see-saw path (single-threaded compile)...")
+    min_ppt2_witness(forms[1], n, m; restarts = 1, max_iter = 2, tol = tol, rng = Xoshiro(seed))
+
     all_values = Vector{Float64}(undef, N)
     results = Vector{Union{Nothing,WitnessComposition}}(undef, N)
     @showprogress @threads for i in 1:N

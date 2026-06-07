@@ -1,5 +1,6 @@
 using ppt2          # rand_ppt, test_ppt2, generate_dataset, load_batches
 using ArgParse
+using Random        # Xoshiro for the single-threaded warmup
 
 # Per accepted state we keep the state plus the raw score of every criterion;
 # the detection booleans are derived from these against `tol` at summary time,
@@ -43,6 +44,10 @@ function _parse_args()
         "--ppt-invariant"
             help = "Symmetrise off-diagonal blocks so each sampled state is invariant under partial transpose"
             action = :store_true
+        "--seed"
+            help = "Base RNG seed (passed to generate_dataset as seed0; changes the dataset)"
+            arg_type = Int
+            default = 0
         "--forms", "-f"
             help = "Path to pre-generated PnCP forms (default: pncp_NxM.jld2)"
             arg_type = String
@@ -86,6 +91,7 @@ function main()
     level = args["level"]
     tol = args["tol"]
     ppt_invariant = args["ppt-invariant"]
+    seed = args["seed"]
     forms_path = isempty(args["forms"]) ? "pncp_$(n)x$(m).jld2" : args["forms"]
     filename = isempty(args["output"]) ? "detection_$(n)x$(m).jld2" : args["output"]
 
@@ -113,10 +119,19 @@ function main()
         )
     end
 
+    # Warm up the full trial path (rand_ppt + all three criteria, incl. the heavy
+    # level-2 DPS entanglement_robustness/Mosek compile) single-threaded BEFORE the
+    # @threads generation. Otherwise the first parallel wave has every worker hit the
+    # uncompiled DPS path at once and thrash Julia's codegen lock — observed to
+    # livelock for >30 min at -t 16. One serial precompile takes a few minutes.
+    println("Warming up the trial path (single-threaded compile)...")
+    trial(Xoshiro(0))
+
     generate_dataset(
         filename, args["total"], args["batch"], trial;
+        seed0 = seed,
         T = DetectionResult,
-        meta = Dict("dim_A" => n, "dim_B" => m, "level" => level, "tol" => tol, "ppt_invariant" => ppt_invariant, "forms" => forms_path),
+        meta = Dict("dim_A" => n, "dim_B" => m, "level" => level, "tol" => tol, "ppt_invariant" => ppt_invariant, "seed" => seed, "forms" => forms_path),
         label = "detected entangled PPT states",
     )
 

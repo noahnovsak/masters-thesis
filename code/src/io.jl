@@ -36,6 +36,29 @@ function load_meta(path)
     end
 end
 
+# Accept both state-file layouts: the bare `Vector{Matrix}` written by gen_ppt.jl
+# and the `(witness_idx, value, state)` named tuples written by gen_witness_ppt.jl.
+state_of(x) = x isa AbstractMatrix ? x : x.state
+
+"""
+    load_states(path) -> Vector{Matrix}
+
+Load a pre-generated state library (either layout, via [`state_of`](@ref)) as real
+matrices. The witness-PPT states are Hermitian but real-symmetric up to SDP noise
+(the PnCP witnesses are real, so `min_ppt_witness` attains its optimum on the real
+slice). Dropping the negligible imaginary part keeps every downstream SDP — above
+all the DPS robustness solve — over the real PSD cone instead of the complex
+Hermitian one (half the dimension, much faster) without changing the result; a
+non-negligible imaginary part is warned about but still dropped.
+"""
+function load_states(path)
+    states = map(state_of, load_batches(path))
+    im = maximum(s -> maximum(z -> abs(imag(z)), s), states; init = 0.0)
+    re = maximum(s -> maximum(abs, real(s)), states; init = 1.0)
+    im > 1e-6 * re && @warn "states carry a non-negligible imaginary part; taking the real part regardless" rel = im / re
+    return map(real, states)
+end
+
 # ── Writers: resumable, reproducible, multithreaded batch generation ──────────
 
 "Ids of the `batch_<id>` groups already in `filename` (empty if missing)."

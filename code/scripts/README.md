@@ -56,6 +56,7 @@ its retry budget without a positive, non-SOS certificate.
 | `--batch`, `-b` | 200 | maps per batch |
 | `--dim_A`, `-n` | 4 | dimension of subspace A |
 | `--dim_B`, `-m` | 4 | dimension of subspace B |
+| `--seed` | 0 | base RNG seed (passed to `generate_dataset` as `seed0`; changes the dataset) |
 | `--output`, `-o` | `pncp_NxM.jld2` | output file |
 
 ### `gen_ppt.jl`
@@ -72,6 +73,7 @@ entanglement (robustness `> --tol`).
 | `--dim_B`, `-m` | 4 | dimension of subspace B |
 | `--tol` | 1e-8 | keep states with robustness above this |
 | `--ppt-invariant` | off | symmetrise off-diagonal blocks so each state is invariant under partial transpose |
+| `--seed` | 0 | base RNG seed (passed to `generate_dataset` as `seed0`; changes the dataset) |
 | `--output`, `-o` | `ppt_entangled_NxM.jld2` | output file |
 
 ### `test_ppt2.jl`
@@ -175,8 +177,34 @@ julia --project=. -t auto scripts/compare_detection.jl --total 1000 --batch 200 
 | `--level`, `-l` | 2 | DPS hierarchy level |
 | `--tol` | 1e-8 | detection tolerance |
 | `--ppt-invariant` | off | symmetrise off-diagonal blocks so each sampled state is invariant under partial transpose |
+| `--seed` | 0 | base RNG seed (passed to `generate_dataset` as `seed0`; changes the dataset) |
 | `--forms`, `-f` | `pncp_NxM.jld2` | pre-generated PnCP forms |
 | `--output`, `-o` | `detection_NxM.jld2` | output file |
+
+### `detection_power.jl`
+
+Measures the detection power of the three criteria — DPS, the PnCP trace witness, and
+the PnCP ampliation (`system=1`) — on a **pre-generated** state library, rather than
+sampling its own like `compare_detection.jl`. Loads an existing state file (any layout,
+via the shared `load_states`) and runs every criterion on every state, then prints the
+same per-criterion breakdown (DPS-only / PnCP-only / overlap). Use it to score a fixed
+pool such as the witness-constructed states from `gen_witness_ppt.jl`. Requires a
+pre-generated PnCP form library.
+
+```sh
+julia --project=. -t auto scripts/detection_power.jl -n 4 -m 4 --level 2 \
+    -s witness_ppt_4x4.jld2 -f pncp_4x4.jld2
+```
+
+| option | default | meaning |
+| --- | --- | --- |
+| `--dim_A`, `-n` | 4 | dimension of subspace A |
+| `--dim_B`, `-m` | 4 | dimension of subspace B |
+| `--level`, `-l` | 2 | DPS hierarchy level |
+| `--tol` | 1e-8 | detection tolerance |
+| `--states`, `-s` | — | pre-generated state library to scan (required) |
+| `--forms`, `-f` | `pncp_NxM.jld2` | pre-generated PnCP forms |
+| `--output`, `-o` | `detection_power_NxM.jld2` | per-state scores output |
 
 ### `gen_witness_ppt.jl`
 
