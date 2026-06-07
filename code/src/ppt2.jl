@@ -14,7 +14,7 @@ export pncp_mat, ampliation, rand_ppt, rand_sep, rand_psd, is_ppt,
     antisymmetric_projector, gram_freedom, is_block_positive,
     detect_trace, detect_ampliation, detect_dps, test_ppt2, min_ppt_witness,
     min_eig, has_negative_eig, has_negative_eig!, min_ppt2_witness,
-    load_batches, load_meta, batch_id_of,
+    load_batches, load_meta, load_states, batch_id_of,
     completed_batches, batch_counts, write_meta!, sample_batch, generate_dataset
 
 
@@ -301,7 +301,12 @@ end
 # `tr(form·τ)` is real for a real-symmetric witness and Hermitian τ; `real` both
 # drops the numerical imaginary part and keeps `findmin` well-defined when τ is
 # complex (e.g. the Hermitian PPT states from `min_ppt_witness`).
-detect_trace(τ, forms; tol=1e-8) = let (v, i) = findmin(real.(tr.(forms .* Ref(τ))))
+# `tr(form·τ) = real(dot(form, τ))` for a real-symmetric `form` and Hermitian `τ`
+# (tr(AB) = Σ A_ij B_ji, and B_ji = conj(B_ij)), computed WITHOUT materialising the
+# 10000 matrix products `forms .* Ref(τ)` did — those allocated ~20 MB per call and,
+# in the @threads detection loops, drove constant stop-the-world GC that collapsed
+# parallelism. `findmin(f -> …, forms)` scans allocation-free.
+detect_trace(τ, forms; tol=1e-8) = let (v, i) = findmin(form -> real(dot(form, τ)), forms)
     (value=v, idx=i, detected=v < -tol)
 end
 
@@ -327,11 +332,28 @@ function detect_ampliation(τ, forms, n, m; tol=1e-8, system::Int=1)
     return (value=best, idx=idx, detected=idx != 0)
 end
 
-"Level-`level` DPS robustness from Ket; `witness` is Ket's entanglement witness."
-detect_dps(τ, n, m; level=2, tol=1e-8) =
-    let (r, w) = entanglement_robustness(Hermitian(Matrix(τ)), [n, m], level; solver=Mosek.Optimizer)
-        (value=r, witness=w, detected=r > tol)
+"""
+    detect_dps(τ, n, m; level=2, tol=1e-8)
+
+Level-`level` DPS robustness from Ket; `witness` is Ket's entanglement witness;
+`detected` when robustness `> tol`.
+
+If `τ` is stored complex but is real up to numerical noise — as the witness PPT
+states are (`min_ppt_witness` attains its optimum on the real slice, leaving an
+imaginary part ~1e-12) — the imaginary part is dropped so `entanglement_robustness`
+runs over the real PSD cone instead of the double-dimension complex Hermitian one.
+This is the same real-slice trick `test_ppt2.jl` applies on load, here guaranteed at
+the solve itself: measured ≈38× faster (2.4 s vs 92 s) with identical robustness.
+A genuinely complex `τ` (non-negligible imaginary part) is left untouched.
+"""
+function detect_dps(τ, n, m; level=2, tol=1e-8)
+    M = Matrix(τ)
+    if eltype(M) <: Complex && maximum(abs ∘ imag, M; init=0.0) <= 1e-9 * maximum(abs ∘ real, M; init=1.0)
+        M = real(M)
     end
+    r, w = entanglement_robustness(Hermitian(M), [n, m], level; solver=Mosek.Optimizer)
+    return (value=r, witness=w, detected=r > tol)
+end
 
 # One named criterion applied to τ.
 function _criterion(c::Symbol, τ, forms, n, m, level, tol)

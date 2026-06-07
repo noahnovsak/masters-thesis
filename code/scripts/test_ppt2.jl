@@ -61,22 +61,7 @@ function _parse_args()
     return parse_args(s)
 end
 
-# Accept both state-file layouts: the bare `Vector{Matrix}` written by gen_ppt.jl
-# and the `(witness_idx, value, state)` named tuples written by gen_witness_ppt.jl.
-state_of(x) = x isa AbstractMatrix ? x : x.state
-
-# The witness-PPT states are Hermitian but real-symmetric up to SDP noise (the PnCP
-# witnesses are real, so `min_ppt_witness` attains its optimum on the real slice).
-# Dropping the negligible imaginary part keeps every downstream SDP — above all the
-# DPS robustness solve — over the real PSD cone instead of the complex Hermitian one
-# (half the dimension, much faster) without changing the result.
-function load_states(path)
-    states = map(state_of, load_batches(path))
-    im = maximum(s -> maximum(z -> abs(imag(z)), s), states; init = 0.0)
-    re = maximum(s -> maximum(abs, real(s)), states; init = 1.0)
-    im > 1e-6 * re && @warn "states carry a non-negligible imaginary part; taking the real part regardless" rel = im / re
-    return map(real, states)
-end
+# `load_states` (layout-agnostic load + real-slice drop) lives in the ppt2 module.
 
 # ── Resumable ledger ──────────────────────────────────────────────────────────
 
@@ -144,6 +129,17 @@ function run_pairs(n, m, forms, states, tol, output_dir, ledger_path, limit, cri
     if target == 0
         println("Nothing to do.")
         return (0, 0, length(done), prev_detected)
+    end
+
+    # Warm up the per-pair path single-threaded (ampliation + criteria, incl. the heavy
+    # level-2 DPS compile under --with-dps, + eigmin/partial_transpose) so the first
+    # @threads wave doesn't livelock on Julia's codegen lock (observed >30 min stall).
+    println("Warming up the per-pair path (single-threaded compile)...")
+    let comp = Matrix(ampliation(states[1], states[1], n, m))
+        test_ppt2(comp; n = n, m = m, compose = false, forms = forms,
+                  criteria = criteria, tol = tol, mode = :parallel)
+        eigmin(Hermitian(comp))
+        eigmin(Hermitian(partial_transpose(comp, 2, [n, m])))
     end
 
     io = open_ledger(ledger_path)

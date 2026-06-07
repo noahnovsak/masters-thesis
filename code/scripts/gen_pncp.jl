@@ -20,6 +20,10 @@ function _parse_args()
             help = "Dimension of subspace B"
             arg_type = Int
             default = 4
+        "--seed"
+            help = "Base RNG seed (passed to generate_dataset as seed0; changes the dataset)"
+            arg_type = Int
+            default = 0
         "--output", "-o"
             help = "Output filename (default: pncp_NxM.jld2)"
             arg_type = String
@@ -32,6 +36,7 @@ function main()
     args = _parse_args()
     n = args["dim_A"]
     m = args["dim_B"]
+    seed = args["seed"]
     filename = isempty(args["output"]) ? "pncp_$(n)x$(m).jld2" : args["output"]
 
     # one trial = one construction attempt; it fails (nothing) when the
@@ -40,7 +45,8 @@ function main()
 
     generate_dataset(
         filename, args["total"], args["batch"], trial;
-        meta = Dict("dim_A" => n, "dim_B" => m),
+        seed0 = seed,
+        meta = Dict("dim_A" => n, "dim_B" => m, "seed" => seed),
         label = "PnCP maps",
     )
 end

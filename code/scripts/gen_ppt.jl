@@ -27,6 +27,10 @@ function _parse_args()
         "--ppt-invariant"
             help = "Symmetrise off-diagonal blocks so each state is invariant under partial transpose"
             action = :store_true
+        "--seed"
+            help = "Base RNG seed (passed to generate_dataset as seed0; changes the dataset)"
+            arg_type = Int
+            default = 0
         "--output", "-o"
             help = "Output filename (default: ppt_entangled_NxM.jld2)"
             arg_type = String
@@ -41,6 +45,7 @@ function main()
     m = args["dim_B"]
     tol = args["tol"]
     ppt_invariant = args["ppt-invariant"]
+    seed = args["seed"]
     filename = isempty(args["output"]) ? "ppt_entangled_$(n)x$(m).jld2" : args["output"]
 
     # one trial = one random PPT state; accepted only when the level-2 DPS
@@ -52,7 +57,8 @@ function main()
 
     generate_dataset(
         filename, args["total"], args["batch"], trial;
-        meta = Dict("dim_A" => n, "dim_B" => m, "tol" => tol, "ppt_invariant" => ppt_invariant),
+        seed0 = seed,
+        meta = Dict("dim_A" => n, "dim_B" => m, "tol" => tol, "ppt_invariant" => ppt_invariant, "seed" => seed),
         label = "entangled PPT states",
     )
 end
