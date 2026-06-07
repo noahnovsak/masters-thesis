@@ -1,3 +1,15 @@
+#import "@preview/drafting:0.2.2": *
+#import "@preview/algorithmic:1.0.7"
+#import "@preview/cheq:0.3.0": checklist
+#import algorithmic: *
+#import "@preview/lemmify:0.1.8": *
+
+#let (theorem, definition, rules: thm-rules) = default-theorems(
+  "thm-group", lang: "en",
+  thm-numbering: thm-numbering-heading.with(max-heading-level: 1),
+  max-reset-level: 1,
+)
+
 #let conf(
   title_en: "",
   title_sl: "",
@@ -19,12 +31,12 @@
   // Page layout per UL FRI guidelines: A4, bound edition (inner margin wider).
   set page(
     paper: "a4",
-    margin: (top: 20mm, bottom: 30mm, inside: 30mm, outside: 20mm),
+    margin: (top: 20mm, bottom: 30mm, inside: 40mm, outside: 30mm),
     numbering: none,
   )
 
   // Headings in Helvetica/Arial, body in a Times-like serif, ~1.3 line spacing.
-  set text(font: "Times New Roman", size: 12pt, lang: "en")
+  set text(font: "New Computer Modern", size: 12pt, lang: "en")
   set par(leading: 0.8em, justify: true, linebreaks: "optimized")
 
   show heading: set text(font: "Helvetica", weight: "bold")
@@ -39,20 +51,35 @@
   set math.equation(numbering: "(1)")
   show math.equation: set text(font: "New Computer Modern Math")
 
+  show link: it => {
+  if type(it.dest) == str {
+    // external URL (e.g. "https://...")
+    set text(font: "New Computer Modern Mono")
+    it
+  } else {
+    it
+  }
+}
+
   show ref: it => {
     let el = it.element
-    if el != none and el.func() == heading {
+    if el == none {
+      it
+    } else if el.func() == heading {
       let num = counter(heading).at(el.location())
       [#num.at(0) #el.body]
+    } else if el.func() == math.equation {
+      let num = numbering(el.numbering, ..counter(math.equation).at(el.location()))
+      link(el.location())[#num]
     } else {
       it
     }
-}
+  }
 
   // Centered figures with bold caption labels ("Figure N", "Table N").
   show figure: set align(center)
   show figure.caption: it => context {
-    set text(size: 10pt)
+    set text(size: 11pt)
     strong[#it.supplement #it.counter.display(it.numbering)#it.separator]
     it.body
   }
@@ -60,74 +87,71 @@
   // --- COVER PAGE (Slovene) ---
   {
     set align(center)
-    text(size: 14pt, smallcaps[Univerza v Ljubljani]); linebreak()
+    v(1fr)
+    text(size: 14pt, smallcaps[Univerza v Ljubljani])
+    linebreak()
     text(size: 14pt, smallcaps[Fakulteta za računalništvo in informatiko])
-    v(9em)
-    text(size: 14pt, author); linebreak()
-    v(1em)
+    v(2fr)
+    text(size: 14pt, author)
+    v(0em)
     text(size: 18pt, weight: "bold", title_sl)
-    v(1.2em)
-    text(size: 14pt, weight: "bold")[MAGISTRSKO DELO]
-    v(0.4em)
-    text(size: 12pt)[
+    v(2em)
+    text(size: 12pt, )[
+      MAGISTRSKO DELO
+
       MAGISTRSKI ŠTUDIJSKI PROGRAM DRUGE STOPNJE \
       RAČUNALNIŠTVO IN INFORMATIKA \
-      SMER: PODATKOVNE VEDE
+      #smallcaps("Smer: Podatkovne Vede")
     ]
-    v(1fr)
-    text(size: 12pt)[Mentor: #mentor]
+    v(3fr)
+    text(size: 12pt)[#smallcaps("Mentor"): #mentor]
     if cosupervisor != none {
       linebreak()
-      text(size: 12pt)[Somentor: #cosupervisor]
+      text(size: 12pt)[#smallcaps("Somentor"): #cosupervisor]
     }
     v(1.5em)
     text(size: 12pt)[Ljubljana, #str(year)]
+    v(1fr)
   }
   pagebreak()
 
   // --- TITLE PAGE (English) ---
   {
     set align(center)
-    text(size: 14pt, smallcaps[University of Ljubljana]); linebreak()
+    v(1fr)
+    text(size: 14pt, smallcaps[University of Ljubljana])
+    linebreak()
     text(size: 14pt, smallcaps[Faculty of Computer and Information Science])
-    v(9em)
-    text(size: 14pt, author); linebreak()
-    v(1em)
+    v(2fr)
+    text(size: 14pt, author)
+    v(0em)
     text(size: 18pt, weight: "bold", title_en)
-    v(1.2em)
-    text(size: 14pt, weight: "bold")[MASTER'S THESIS]
-    v(0.4em)
+    v(2em)
     text(size: 12pt)[
+      MASTER'S THESIS
+
       THE 2ND CYCLE MASTER'S STUDY PROGRAMME \
       COMPUTER AND INFORMATION SCIENCE \
-      TRACK: DATA SCIENCE
+      #smallcaps("Track: Data Science")
     ]
-    v(1fr)
-    text(size: 12pt)[Supervisor: #mentor]
+    v(3fr)
+    text(size: 12pt)[#smallcaps("Supervisor"): #mentor]
     if cosupervisor != none {
       linebreak()
-      text(size: 12pt)[Co-supervisor: #cosupervisor]
+      text(size: 12pt)[#smallcaps("Co-supervisor"): #cosupervisor]
     }
     v(1.5em)
     text(size: 12pt)[Ljubljana, #str(year)]
+    v(1fr)
   }
   pagebreak()
 
   // --- COPYRIGHT / LICENSE PAGE (CC BY-SA 4.0) ---
   {
-    set text(size: 10pt)
-    v(1fr)
+    set text(size: 11pt)
+    v(4fr)
     par(justify: true)[
-      This work is licensed under the _Creative Commons Attribution–ShareAlike
-      4.0 International (CC BY-SA 4.0)_ license. This means that the text, images,
-      graphs, and other components of this work may be freely shared, reproduced,
-      made available to the public, and adapted for any purpose, including
-      commercial use, provided that the author is clearly credited (preferably also
-      the title and a link to the original), a link to the license is provided, any
-      changes are indicated, and adaptations are distributed under the same license
-      (CC BY-SA 4.0). The license does not permit the addition of extra legal or
-      technological restrictions and does not apply to parts for which the rights
-      holder is not the author. Details of the license are available at
+      This work is licensed under the _Creative Commons Attribution–ShareAlike 4.0 International (CC BY-SA 4.0)_ license. This means that the text, images, graphs, and other components of this work may be freely shared, reproduced, made available to the public, and adapted for any purpose, including commercial use, provided that the author is clearly credited (preferably also the title and a link to the original), a link to the license is provided, any changes are indicated, and adaptations are distributed under the same license (CC BY-SA 4.0). The license does not permit the addition of extra legal or technological restrictions and does not apply to parts for which the rights holder is not the author. Details of the license are available at
       #link("https://creativecommons.org").
     ]
     v(0.5em)
@@ -139,17 +163,14 @@
       image("license/cc_sa_30.svg", height: 0.9cm),
     ))
     if code_url != none {
-      v(1.2em)
+      v(3em)
       par(justify: true)[
-        The source code of the thesis, its results, and the software developed for
-        this purpose are licensed under the GNU General Public License, version 3
-        (or later). This means it may be freely distributed and/or modified under
-        its terms, and is available at #link(code_url). Details of the license are
-        available at #link("https://www.gnu.org/licenses/").
+        The provided source code of the thesis, its results, and the software developed for this purpose are licensed under the GNU General Public License, version 3 (or later). This means they may be freely distributed and/or modified under its terms, and are available at #link(code_url). Details of the license are available on the website at #link("https://www.gnu.org/licenses/").
       ]
     }
-    v(1.5em)
-    align(center, text(size: 9pt, smallcaps[© #str(year) #author]))
+    v(1em)
+    align(center, text(size: 11pt, smallcaps[© #str(year) #author]))
+    v(1fr)
   }
   pagebreak()
 

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="-40 30 900 600"
+   font-family="'Times New Roman', Times, serif"
+   version="1.1"
+   id="svg15"
+   sodipodi:docname="entanglement_witness_hyperplanes.svg"
+   inkscape:version="1.4.4 (dcaf3e7, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview15"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.82053204"
+     inkscape:cx="439.95845"
+     inkscape:cy="315.0395"
+     inkscape:window-width="1349"
+     inkscape:window-height="820"
+     inkscape:window-x="0"
+     inkscape:window-y="33"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg15" />
+  <defs
+     id="defs6">
+    <radialGradient
+       id="fillAll"
+       cx="45%"
+       cy="42%"
+       r="70%">
+      <stop
+         offset="0%"
+         stop-color="#e9eef5"
+         id="stop1" />
+      <stop
+         offset="100%"
+         stop-color="#dbe3ef"
+         id="stop2" />
+    </radialGradient>
+    <radialGradient
+       id="fillPPT"
+       cx="42%"
+       cy="45%"
+       r="70%">
+      <stop
+         offset="0%"
+         stop-color="#cde0d6"
+         id="stop3" />
+      <stop
+         offset="100%"
+         stop-color="#b9d4c5"
+         id="stop4" />
+    </radialGradient>
+    <radialGradient
+       id="fillSEP"
+       cx="40%"
+       cy="48%"
+       r="70%">
+      <stop
+         offset="0%"
+         stop-color="#f3e2bd"
+         id="stop5" />
+      <stop
+         offset="100%"
+         stop-color="#ecd49c"
+         id="stop6" />
+    </radialGradient>
+    <clipPath
+       id="clipAll">
+      <path
+         d="M 100,300                C 100,150 230,68 420,68                C 610,68 720,190 720,320                C 720,460 600,552 410,552                C 220,552 100,450 100,300 Z"
+         id="path6" />
+    </clipPath>
+  </defs>
+  <!-- ===================== NESTED CONVEX SETS ===================== -->
+  <path
+     d="M 100,300            C 100,150 230,68 420,68            C 610,68 720,190 720,320            C 720,460 600,552 410,552            C 220,552 100,450 100,300 Z"
+     fill="url(#fillAll)"
+     stroke="#8d9bb0"
+     stroke-width="2"
+     id="path7" />
+  <path
+     d="M 170,300            C 170,195 270,136 410,136            C 550,136 640,212 640,318            C 640,426 545,488 405,488            C 270,488 170,410 170,300 Z"
+     fill="url(#fillPPT)"
+     stroke="#5f9476"
+     stroke-width="2"
+     id="path8" />
+  <path
+     d="M 250,300            C 250,232 310,192 405,192            C 498,192 562,240 562,312            C 562,388 495,428 402,428            C 310,428 250,372 250,300 Z"
+     fill="url(#fillSEP)"
+     stroke="#c79a3a"
+     stroke-width="2"
+     id="path9" />
+  <!-- ===================== WITNESS HYPERPLANES (extend beyond the edges) ===================== -->
+  <!-- shaded band stays clipped to the state space -->
+  <g
+     clip-path="url(#clipAll)"
+     id="g10">
+    <path
+       d="M 48,161 L 528,614 L 480,665 L 0,212 Z"
+       fill="#7a3030"
+       fill-opacity="0.10"
+       stroke="none"
+       id="path10" />
+  </g>
+  <!-- W1: tangent to SEP, extended -->
+  <line
+     x1="-76"
+     y1="44"
+     x2="652"
+     y2="731"
+     stroke="#7a3030"
+     stroke-width="2.6"
+     id="line10" />
+  <!-- W2: parallel, further out, extended -->
+  <line
+     x1="-124"
+     y1="95"
+     x2="604"
+     y2="782"
+     stroke="#9c7a32"
+     stroke-width="2.4"
+     stroke-dasharray="9 6"
+     id="line11" />
+  <!-- tangency point: W1 touches the separable boundary -->
+  <!-- ===================== ORDERED REGION LABELS (stacked by nesting, on the central axis) ===================== -->
+  <text
+     x="522.11194"
+     y="125.125"
+     font-size="20px"
+     fill="#3c485c"
+     font-weight="bold"
+     text-anchor="middle"
+     id="text11">ENT</text>
+  <text
+     x="572.62714"
+     y="236.65051"
+     font-size="20px"
+     fill="#2f5a44"
+     font-weight="bold"
+     text-anchor="middle"
+     id="text12">PPT</text>
+  <text
+     x="445.82535"
+     y="287.38736"
+     font-size="20px"
+     fill="#7a5b18"
+     font-weight="bold"
+     text-anchor="middle"
+     id="text13">SEP</text>
+  <!-- ===================== WITNESS LABELS (beside each line near the lower edge) ===================== -->
+  <text
+     x="363.95087"
+     y="589.58044"
+     font-size="20px"
+     fill="#8a6a22"
+     font-weight="bold"
+     text-anchor="end"
+     id="text14">W₂</text>
+  <text
+     x="513.4201"
+     y="587.54919"
+     font-size="20px"
+     fill="#7a3030"
+     font-weight="bold"
+     text-anchor="start"
+     id="text15">W₁</text>
+</svg>
