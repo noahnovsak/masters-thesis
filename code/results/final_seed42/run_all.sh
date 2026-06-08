@@ -82,12 +82,12 @@ run_step gen_witness_ppt "$LOGS/02_gen_witness_ppt.log" \
 
 # 3. Random PPT pool, ASYMMETRIC: sample + record DPS/trace/ampliation detection power.
 run_step compare_detection_asym "$LOGS/03_cmp_asym.log" \
-    $J scripts/compare_detection.jl --total 10000 --batch 200 -n 4 -m 4 \
+    $J scripts/compare_detection.jl --total 5000 --batch 200 -n 4 -m 4 \
        --level 2 --tol 1e-8 --seed 42 -f "$FORMS" -o "$ASYM"
 
 # 4. Random PPT pool, SYMMETRIC (partial-transpose invariant).
 run_step compare_detection_sym "$LOGS/04_cmp_sym.log" \
-    $J scripts/compare_detection.jl --total 10000 --batch 200 -n 4 -m 4 \
+    $J scripts/compare_detection.jl --total 5000 --batch 200 -n 4 -m 4 \
        --level 2 --tol 1e-8 --seed 42 --ppt-invariant -f "$FORMS" -o "$SYM"
 
 # 5. Detection power of the three tests on the witness-constructed library.
