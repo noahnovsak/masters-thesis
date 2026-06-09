@@ -1,7 +1,6 @@
 #import "conf.typ": *
 
 #show: style-algorithm
-#show: checklist
 #show: thm-rules
 
 #show: conf.with(
@@ -17,29 +16,6 @@
   abstract_sl: [V tem delu raziskujemo...],
   extended_abstract_sl: [Daljši slovenski povzetek vsebine...],
 )
-
-// fixes "layout did not converge" warning
-// #let margin-note = margin-note.with(dy: 0pt)
-
-// TEMPORARY: red placeholder for a result number still to be filled in.
-// Grep for `nbr(` to find all pending numbers; remove this helper once none remain.
-#let nbr(x) = text(fill: red)[‹#x›]
-
-= TODO <todo>
-
-*Writing*
-- [ ] Write the abstracts: English, Slovene, and the extended Slovene summary.
-- [ ] Polish the Introduction: spell out the implications of the conjecture holding versus failing, and sharpen the statement of current knowledge ($n <= 3$ proven, $n >= 4$ open).
-- [ ] Expand the Conclusion into a genuine discussion: the Gram-representation freedom, the inertness of the symmetric (partial transpose invariant) family, the limitations, and the outlook.
-
-*Results* (pending)
-- [ ] Finalize the PPT2 search results: final candidates and witnesses, hardware, wall-clock, and outcome.
-- [ ] Fill in the performance numbers in the Performance section: Julia generation timings and the MATLAB-prototype comparison.
-- [ ] Remove the temporary `nbr()` red-highlight helper once all numbers are final.
-
-*References*
-- [ ] Complete and verify all citations: resolve the remaining reference placeholders and margin notes.
-
 
 = Introduction <intro>
 
@@ -251,7 +227,7 @@ Semidefinite programming also underlies a general relaxation of polynomial non-n
 
 Testing whether $p$ is SOS therefore reduces to a semidefinite feasibility problem: find $G succ.eq 0$ satisfying the linear constraints that equate coefficients of @gram-rep with those of $p$. If no such $G$ exists, $p$ is not SOS.
 
-Testing the nonnegativity of a polynomial $p$ is an NP-hard problem @Luo_1998. The standard way around this is to use SOS relaxations which are computationally tractable. The idea is to multiply $p$ by a fixed SOS multiplier and test the product for SOS. #margin-note[reference, explanation of Positivstellensatz, formula for the multiplier/retrieving polynomial from the multiplier]
+Testing the nonnegativity of a polynomial $p$ is an NP-hard problem @Luo_1998. The standard way around this is to use SOS relaxations which are computationally tractable. The idea is to multiply $p$ by a fixed SOS multiplier and test the product for SOS @Reznick_1995.
 
 === Entanglement testing as an SDP
 
@@ -315,7 +291,7 @@ Then extend $dagger$-linearly to complex matrices,
 $ Gamma_CC (A + i B) = (Phi plus.o 0)(A) + i (Phi plus.o 0)(B), quad A, B in M_n (RR), $
 the unique extension satisfying $Gamma_CC (X^*) = Gamma_CC (X)^*$. Klep et al. prove that $Gamma_CC$ is positive (respectively PNCP) whenever $Phi$ is @Klep_2017.
 
-Two observations make this extension harmless to compute with. First, for a Hermitian input $rho = A + i B$ (with $A in S_n (RR)$ symmetric and $B in K_n (RR)$ skew-symmetric, since $rho = rho^*$) only the symmetric part survives, $Gamma_CC (rho) = Phi(A)$. Second, and equivalently, the Choi matrix of $Gamma_CC$ is exactly the real symmetric matrix $C_Phi$ returned by the construction, now read as a complex Hermitian operator; no entries change. A by-product of annihilating the skew part is that $C_Phi$ is _partial-transpose invariant_, $C_Phi^Gamma = C_Phi$, a property we return to in section @witness-findings.
+Two observations make this extension harmless to compute with. First, for a Hermitian input $rho = A + i B$ (with $A in S_n (RR)$ symmetric and $B in K_n (RR)$ skew-symmetric, since $rho = rho^*$) only the symmetric part survives, $Gamma_CC (rho) = Phi(A)$. Second, and equivalently, the Choi matrix of $Gamma_CC$ is exactly the real symmetric matrix $C_Phi$ returned by the construction, now read as a complex Hermitian operator; no entries change. A by-product of annihilating the skew part is that $C_Phi$ is _partial-transpose invariant_, $C_Phi^Gamma = C_Phi$, a property we return to in section @asym-witnesses.
 
 ==== Indecomposability of the generated maps <indecomposability>
 
@@ -368,12 +344,12 @@ This chapter defines the computational workflow used in the current implementati
 A note on normalization is in order. A quantum state is conventionally a PSD operator with unit trace, and a quantum channel is trace preserving. The tests in this thesis are, however, positivity and sign based. Detecting entanglement amounts to checking the sign of a partial transpose, a witness expectation, or an SOS margin, none of which depend on the magnitude of the trace. We therefore work throughout with unnormalized operators, and normalize only when necessary. This avoids redundant rescaling in the inner loops without affecting any conclusion.
 
 Two design constraints shape the workflow:
-1. _exact_ separability testing is intractable in the dimensions where the conjecture is open (@dps-section), partial testing is very much doable, but every complete test is a one-sided relaxation;
-2. SDP solutions are floating-point and fragile near feasibility boundaries, so positive detections are re-validated exactly (@rationalization).
+1. _exact_ separability testing is intractable in the dimensions where the conjecture is open, partial testing is very much doable, but every complete test is a one-sided relaxation;
+2. SDP solutions are floating-point and fragile near feasibility boundaries, so positive detections are re-validated exactly.
 
 == Generating a witness library <witness-library>
 
-Stage 1 builds the witness library. We run the KMSZ construction to produce $N_W$ PNCP maps, and rationalize each certificate so that every stored witness is exact, guarding against the false positives that floating-point SOS tests invite near the boundary.
+Building a library of PNCP witnesses is the first thing the pipeline does, and a contribution in its own right: being able to generate witnesses quickly and in bulk is what prompted this line of research, and the library is reused throughout. We run the KMSZ construction to produce a number of PNCP maps, and rationalize each certificate so that every stored witness is exact, guarding against the false positives that floating-point SOS tests invite near the boundary.
 
 The rationalization, developed in section @rationalization, proceeds as follows:
 1. Extract the Gram matrix $G$ from the SDP constraints, $ (delta f + h^2)(sum_(i,j) x_i^2 y_j^2)^l = (bold(x)bold(y))^T G bold(x) bold(y) $.
@@ -385,7 +361,7 @@ Upon completion we are confident in the validity of the certificate, so we can c
 
 == Generating candidates
 
-We generate PPT states directly as the Choi matrices of PPT maps. A short sampling routine produces a random PPT state; an entanglement filter then keeps only the candidates that can plausibly yield a counterexample. A second, witness-guided generator targets bound entangled states directly.
+To search for a PPT2 counterexample we compose two PPT maps and test the composite channel for entanglement; a candidate is therefore a PPT channel, taken as the Choi matrix of a PPT map. We generate candidates three ways: by generic random sampling, by symmetry-restricted random sampling, and by witness-guided construction. The random sampler produces a PPT state that an entanglement filter keeps only if it can plausibly yield a counterexample; the witness-guided generator instead targets bound entangled states directly, one per witness.
 
 === Random PPT states
 
@@ -397,7 +373,7 @@ We generate PPT states directly as the Choi matrices of PPT maps. A short sampli
   }
 ) <ppt-gen>
 
-The construction is correct without any further work. By definition $rho = R R^T succ.eq 0$, and when $lambda < 0$ the shift adds the non-negative multiple $|lambda| I$ to $rho$, so positivity is preserved. The same shift acts on the partial transpose as $rho^Gamma - lambda I$, because $I^Gamma = I$, which raises every eigenvalue of $rho^Gamma$ by $|lambda|$ and hence makes $rho^Gamma succ.eq 0$. The resulting $rho$ is therefore PPT. Sampling elemnt-wise from the normal distribution produces a representative collection of states @Zyczkowski_2011.
+The construction is correct without any further work. By definition $rho = R R^T succ.eq 0$, and when $lambda < 0$ the shift adds the non-negative multiple $|lambda| I$ to $rho$, so positivity is preserved. The same shift acts on the partial transpose as $rho^Gamma - lambda I$, because $I^Gamma = I$, which raises every eigenvalue of $rho^Gamma$ by $|lambda|$ and hence makes $rho^Gamma succ.eq 0$. The resulting $rho$ is therefore PPT. Sampling element-wise from the normal distribution produces a representative collection of states @Zyczkowski_2011.
 
 The off-diagonal blocks may optionally be symmetrized before the shift, for each block pair $(i, j)$ with $i < j$, both $rho_(i j)$ and $rho_(j i)$ are replaced by their average $(rho_(i j) + rho_(j i)) slash 2$, which forces $rho = rho^Gamma$, invariant under partial transpose (IPT). This symmetrization is not essential. We only check if it makes the computation any simpler or faster, since a single positivity shift then certifies both $rho succ.eq 0$ and $rho^Gamma succ.eq 0$ at once. The Choi matrix of a map is only defined up to the basis convention, so restricting to such IPT representatives is a permissible convenience rather than a requirement. The motivation is that our precomputed witnesses are themselves generated in this IPT shape, so matching the candidates to the same form may make them easier to detect; we therefore run the search in two versions, with and without symmetry.
 
@@ -405,7 +381,7 @@ A random PPT state may be separable or bound entangled, and only the entangled o
 
 === Bound entangled states from a witness <gen-witness-ppt>
 
-The random sampler has no control over entanglement, so many of its draws are discarded. A second generator instead targets entanglement directly, using the witness library to manufacture states it is guaranteed to detect. Fix a witness $W$ and minimize its expectation over the whole PPT cone,
+The random sampler has no control over entanglement, so many of its draws are discarded. The witness-guided generator instead targets entanglement directly, using the witness library to manufacture states it is guaranteed to detect. Fix a witness $W$ and minimize its expectation over the whole PPT cone,
 $ "minimize" quad & tr[W rho] \ "subject to" quad & rho succ.eq 0, \ &rho^Gamma succ.eq 0, \ & tr[rho] = 1. $ <min-ppt-witness>
 This is a single SDP. Since every separable state gives $tr[W rho] >= 0$, a negative optimum exhibits a PPT _entangled_ state that $W$ detects, one bound entangled candidate per witness that admits one. The optimum also measures the witness's detection strength, and is a ready-made hard instance for the following composition tests.
 
@@ -419,35 +395,34 @@ The first method, i.e. random sampling is fast, but it gives no control over ent
 
 == Testing candidates
 
+We keep generation and testing separate so that each pool is built once, checkpointed, and can be reused.
+
+=== Screening a composite for entanglement <composition-search>
+
 Given two PPT candidates $Phi_1$, $Phi_2$ from the pool, we form the Choi matrix of their composition using the ampliation operation @map-comp. Then we test the composite for entanglement: if any composition is ever found to be entangled, the PPT2 conjecture is violated. Because composition is not commutative, the search ranges over _every ordered pair_ of pool states, self-pairs included.
 
-=== Composition search with the witness library and DPS
-
-Each composite is screened by three complementary detection tests:
-- *Scalar witness test.* For each witness $W$ in the precomputed library, $tr[W C] < 0$ certifies that $C$ is entangled.
+We use three distinct criteria to screen the composite channels for entanglement, recording all three so the detectors can be compared directly:
+- *Scalar witness test.* For each witness $W$ in the library, $tr[W C] < 0$ certifies that $C$ is entangled.
 - *Map witness test.* The _stronger_ condition $(I times.o Phi_W)(C) succ.eq.not 0$, evaluated as a smallest-eigenvalue check on the ampliation of the witness map; this can fire where the scalar test does not.
 - *DPS relaxation.* The level-$2$ DPS relaxation; a feasible dual certificate flags entanglement.
 
-The witness library and the DPS test are complementary: precomputed witnesses are cheap to evaluate but are individually much less likely to detect entanglement, whereas the DPS relaxation is more robust but far more expensive. Running all three and recording each score also lets us compare the methods directly, how often the witnesses alone suffice versus how much the DPS relaxation adds (section @results-section).
-
-The components above assemble into a three-stage pipeline. The first two stages build two pools independently, a library of PNCP witness maps and a pool of bound entangled PPT states, and the third stage tests all of their compositions. Separating generation from testing lets each pool be built once, checkpointed, and reused across runs.
-
 #algorithm-figure(
-  "PPT2 counterexample search",
+  "PPT2 composition search",
   {
-    Comment[Stage 1: witness library]
-    For($i = 1, ..., N_W$, {
-      Line[Construct a PNCP map via @kmsz, rationalize its certificate (section @rationalization), and store the witness $W_i$.]
-    })
-    Comment[Stage 2: bound entangled candidate pool]
-    For($j = 1, ..., N_C$, {
-      Line[Sample a random PPT state via @ppt-gen; keep it only if we can verify it is entangled.]
-    })
-    Comment[Stage 3: test all compositions]
+    Line[Build a pool of candidate PPT maps $Phi_1, ..., Phi_N$]
     For($"every ordered pair" (a, b)$, {
-      Line[Form the composite channel $C = (I_n times.o Phi_a)(C_(Phi_b))$.]
-      Line[Flag $C$ if any witness fires ($tr[W_i C] < 0$ or $(I times.o Phi_(W_i))(C) succ.eq.not 0$) or the level-$2$ DPS relaxation reports entanglement.]
-      Line[If $C$ is entangled, re-validate exactly and export the certificate: a counterexample to the PPT2 conjecture.]
+      Line[Form the composite channel $C_(Phi compose Psi)$]
+      For("every witness W in the library", {
+        If($tr[W C_(Phi compose Psi)] < 0$, {
+          Line[Flag $C_(Phi compose Psi)$ as entangled by the scalar witness test.]
+        })
+        If($(I times.o Phi_(W))(C_(Phi compose Psi)) succ.eq.not 0$, {
+          Line[Flag $C_(Phi compose Psi)$ as entangled by the map witness test.]
+        })
+      })
+      If($C_(Phi_1 compose Phi_2) in "DPS"^2$, {
+        Line[Flag $C_(Phi compose Psi)$ as entangled by the DPS relaxation.]
+      })
     })
   },
 ) <pipeline>
@@ -455,7 +430,7 @@ The components above assemble into a three-stage pipeline. The first two stages 
 === Direct PPT2 search by see-saw <gen-witness-ppt2>
 
 The pipeline above tests a finite pool of compositions. We can instead search the composition manifold directly, asking whether a witness $W$ can be made to fire anywhere on it. Sharpening @min-ppt-witness, we minimise $W$'s expectation not over the whole PPT cone but over channels that are themselves compositions of two PPT maps:
-$ "minimize" quad & tr[W dot C_(rho_1 compose rho_2)] \ "subject to" quad & rho_(1,2) succ.eq 0, \ & rho_(1, 2)^Gamma succ.eq 0, \ & tr[rho_(1, 2)] = 1. $ <min-ppt2-witness>
+$ "minimize" quad & tr[W C_(rho_1 compose rho_2)] \ "subject to" quad & rho_(1,2) succ.eq 0, \ & rho_(1, 2)^Gamma succ.eq 0, \ & tr[rho_(1, 2)] = 1. $ <min-ppt2-witness>
 A negative optimum here would exhibit a PPT entangled composition, i.e. a PPT2 counterexample witnessed by $W$. However, the ampliation is bilinear in the pair $(rho_1, rho_2)$, so @min-ppt2-witness is no longer a convex optimization problem. We cannot formulate it as a single SDP, instead we have a bilinear matrix inequality, which we solve by _see-saw_. Freezing one factor and optimising the other in alternation, restarting from several random initialisations. Being non-convex, there is no way to guarantee we reach a global optimum, but what we do know is that the PPT-cone problem @min-ppt-witness is its convex relaxation and lower bound.
 
 === A note on the representation freedom <asym-witnesses>
@@ -467,13 +442,14 @@ As a by-product we explored the representation freedom of section @gram-freedom.
 The implementation is a small Julia package in the `code/` directory. The core logic lives in the `ppt2` module (`code/src/ppt2.jl`), with the PNCP construction split into `code/src/pncp.jl` and included into the same module. Together they map one-to-one onto the operations defined above:
 
 #table(
-  columns: (1fr, 1.8fr),
+  columns: (2fr, 3fr),
   align: (left, left),
+  inset: (x: 0.5em, y: 0.6em),
   stroke: none,
   table.header([*Function*], [*Role*]),
   table.hline(),
-  [`rand_ppt`], [Sample a random PPT state (@ppt-gen): the positivity shift, with optional block symmetrization (`ppt_invariant`).],
-  [`ampliation`], [Compute $(I times.o Phi)(C)$, used both to compose maps and to apply a witness test.],
+  [`rand_ppt`], [@ppt-gen: Sample a random PPT state, with optional block symmetrization (`ppt_invariant` parameter).],
+  [`ampliation`], [Compute $(I times.o A)(B)$, used for map composition and to apply a witness test.],
   [`sample_pncp_form`, `segre_kernel_basis`, `non_sos_form`], [The KMSZ construction: sample Segre-variety points, build the linear forms $h_j$, and produce the non-SOS quadratic form $f$.],
   [`solve_sos`], [Set up and solve the SOS feasibility/optimization SDP for a given relaxation degree $l$; optionally trigger rationalization.],
   [`rationalize_certificate`], [Post-solver rationalization: zero the first $e$ Gram eigenvalues, recover rational coefficients, and re-check non-SOS.],
@@ -483,65 +459,102 @@ The implementation is a small Julia package in the `code/` directory. The core l
 
 The module also exports a few supporting primitives: `rand_sep` and `rand_psd` for reference states, `is_ppt` for the PPT check, `gram_freedom` and `is_block_positive` for the witness-representation freedom and the block-positivity check of section @gram-freedom, and `swap`/`antisymmetric_projector` for the antisymmetric-subspace construction of @Sindici_2018.
 
-The package leans on the established Julia optimization and quantum-information stack rather than reimplementing it. Polynomials and the SOS cone are handled by `DynamicPolynomials` and `SumOfSquares`; the resulting semidefinite programs are modelled with `JuMP` and solved by `MOSEK` through `MosekTools` (any JuMP-compatible SDP solver could be substituted). The DPS hierarchy is not reimplemented: the search driver calls `entanglement_robustness` from `Ket`, an existing quantum-information toolbox that also supplies utilities such as the partial transpose. Matrices and witness libraries are serialized with `JLD2` so that generation and search can be separated and resumed.
+The package leans on the established Julia optimization and quantum-information stack rather than reimplementing it. Polynomials and the SOS cone are handled by `DynamicPolynomials` and `SumOfSquares`; the resulting semidefinite programs are modelled with `JuMP` and solved by `MOSEK` through `MosekTools` (any `JuMP`-compatible SDP solver could be substituted). The DPS hierarchy is not reimplemented: the search driver calls `entanglement_robustness` from `Ket`, an existing quantum-information toolbox that also supplies utilities such as the partial transpose. Matrices and witness libraries are serialized with `JLD2` so that generation and search can be separated and resumed.
 
-Several command-line drivers in `code/scripts/` orchestrate the long-running jobs, all sharing a `common.jl` harness that provides resumable, reproducible, multithreaded batch generation: completed batches are detected and skipped on a rerun, and every candidate is seeded deterministically so a configuration yields the same dataset regardless of thread count. The generation drivers build the two pools: `gen_pncp.jl` constructs the PNCP witness library (Stage 1), while `gen_ppt.jl` samples and DPS-filters a random bound entangled candidate pool and `gen_witness_ppt.jl` produces, for each witness, the bound entangled state the witness-restricted SDP extracts from the full PPT cone (Stage 2). `test_ppt2.jl` then runs the threaded all-pairs search of @pipeline (Stage 3), logging any detection together with the offending state and witness. The remaining drivers support the analysis of section @results-section: `compare_detection.jl` records every criterion's score on each detected state, the two witness tests and the DPS robustness, so the detection methods can be compared directly; `gen_witness_ppt2.jl` sharpens the witness-restricted SDP from the whole PPT cone down to the composition manifold by a see-saw over PPT-map pairs; and `cross_trace.jl` and `cross_ampl.jl` measure how broadly each witness detects states beyond its own. The `code/test/` suite checks the construction against reference values and verifies that generated maps are positive on large random samples, and the `code/notebooks/` directory documents the rationalization, PPT-state, and UPB workflows interactively.
+Several command-line drivers in `code/scripts/` orchestrate the long-running jobs, all sharing a `common.jl` harness that provides resumable, reproducible, multithreaded batch generation: completed batches are detected and skipped on a rerun, and every candidate is seeded deterministically so a configuration yields the same dataset regardless of thread count. The generation drivers build the library and the candidate pools: `gen_pncp.jl` constructs the PNCP witness library; `gen_witness_ppt.jl` produces, for each witness, the bound entangled state the witness-restricted SDP extracts from the full PPT cone; and `compare_detection.jl` samples a random bound entangled pool -- generic or, with `--ppt-invariant`, symmetry-restricted -- while recording every criterion's score on each state, so the detectors can be compared directly (a lighter `gen_ppt.jl` produces such a pool without the scores). `test_ppt2.jl` runs the threaded all-pairs composition search of @pipeline, logging any detection together with the offending state and witness; `gen_witness_ppt2.jl` runs the see-saw that sharpens the witness-restricted SDP from the whole PPT cone down to the composition manifold; and `cross_trace.jl` and `cross_ampl.jl` measure how broadly each witness reaches beyond its own state. The `code/test/` suite checks the construction against reference values and verifies that generated maps are positive on large random samples, and the `code/notebooks/` directory documents the rationalization, PPT-state, and UPB workflows interactively.
 
 = Results <results-section>
 
-This chapter summarizes the results of our search.
+This chapter reports the final $4 times 4$ scan, the smallest dimension in which the PPT2 conjecture is open. It runs along three threads. First, the PNCP witness library: generating these provably indecomposable witnesses quickly and in bulk is a result in its own right, and the engine behind everything that follows. Second, candidate generation: to look for a counterexample for the PPT2 conjecture we compare three ways of producing PPT states capable of producing a composite channel. Third, the conjecture itself, attacked two independent ways: by testing the compositions of our candidates, and by a see-saw SDP that moves from a completely random search to something more _optimized_. Every stage was run once under a single fixed seed, at DPS level 2 and tolerance $10^(-8)$, so the dataset is reproducible. The headline is a uniform negative: no composition of two PPT maps was ever found entangled, leaving the conjecture without a counterexample.
 
-== Search scale and the broad composition search <broad-search>
+== The PnCP witness library <pncp-library>
 
-All experiments are in the $4 times 4$ case, the smallest dimension where the PPT2 conjecture remains open; the methods extend to slightly larger dimensions, but the cost grows quickly and we did not pursue them.
+The pipeline opens by building a library of PNCP witnesses with the KMSZ construction, and being able to do so cheaply is the observation that set this work in motion. We generated 10,000 witnesses in less than an hour, every construction yielding a valid, rationalized certificate.
 
-Stage 1 produced a library of #nbr[10,000] PNCP witnesses via the KMSZ construction, each verified by the rationalization steps. Stage 2 produced the bound entangled candidate pool in two ways: random sampling with an entanglement filter (@ppt-gen) kept #nbr[5000] of #nbr[15,534] sampled states (a hit rate of #nbr[32%]) (sym case #nbr[5000], #nbr[8400], #nbr[60%]), and the witness-restricted SDP @min-ppt-witness extracted a further #nbr[10,000] bound entangled states, one per detecting witness. Building the two pools took approximately #nbr[5] hours on #nbr[80] CPU cores.
+Two choices account for the speed. Where the earlier MATLAB prototype @Bhardwaj_2020 drew random _integer_ matrices -- cosmetically clean, but not generic enough, so it often failed and had to recompute -- we sample from a normal distribution and almost always succeed on the first attempt. And where the prototype rationalizes the whole problem up front, paying for rational arithmetic throughout, we rationalize only after the SDP is solved. The most directly comparable recent result @Masse_2026 builds 20,000 witnesses by the same construction in the _easier_ $3 times 3$ case and reports it taking "several days". Ours is faster by orders of magnitude despite the larger dimension (even accounting for our higher computational resources). With these findings, witness generation may no longer be the bottleneck it once was.
 
-Stage 3 screens compositions by the witness criteria of @pipeline -- the scalar and map scans -- reserving the heavier level-2 DPS relaxation for any flagged pair. Testing a single pair takes on the order of seconds even when multithreaded, so the full quadratic sweep over a pool of thousands of states is infeasible; we therefore scan as large a slice as the budget allows. The portion on record covers #nbr[5,000] ordered pairs, with #nbr[zero] detections. This pairwise sweep is necessarily partial, which is exactly why the witness-restricted SDP probe of the next section -- complete over the entire witness library -- carries the weight of the argument.
+== Generating PPT candidates <candidate-gen>
 
-No composition was found entangled in any test: every composite of two PPT passed all tests well within tolerance, leaving the PPT2 conjecture without a counterexample.
+A PPT2 counterexample is a pair of PPT maps whose composition is entangled. Every candidate is a PPT channel, taken as the Choi matrix of a PPT map. We produce candidates three ways: two random samplers, and one extraction from the witness library. Their comparison in @tbl-candidates is itself one of our findings.
 
-== The witness-restricted SDP probe <ppt2-witness-probe>
+Random sampling by @ppt-gen draws a PPT channel and keeps it only if we can certify it entangled preserving. The yield depends sharply on the sampling shape. Of the generic, non-symmetrized draws we could only certify about half as many compared to the symmetrized, partial-transpose-invariant draws. Keep in mind, these are _detection_ rates, not true entanglement frequencies: a draw we fail to certify may still be bound entangled but beyond the reach of DPS level 2, so each figure is a lower bound on how often the sampler lands on an entangled state. Even as lower bounds the gap is large, and the symmetric rate exceeds that of the recently studied symmetric random-induced construction of @Louvet_2025, whose entanglement probability stays below one half even at its most favourable ancilla dimension (@alt-be), which is itself large enough to be a real computational bottleneck.
 
-The broad search asks whether any composition in a finite pool is entangled. A sharper question is whether the witnesses we hold can detect entanglement on the composition manifold _at all_, even when the state is chosen to make them fire as hard as possible. The two witness-restricted SDPs of Sections @gen-witness-ppt and @gen-witness-ppt2 answer it.
+The third way spends no samples. The witness-restricted SDP @min-ppt-witness extracts from each witness a single bound entangled state that witness is guaranteed to detect. The trade is generality for cost: every such state is guaranteed entangled and essentially free to make, but each is tailored to a single witness, as the next section makes plain.
 
-The first, `min_ppt_witness` (@min-ppt-witness), minimises $tr[W rho]$ over the entire PPT cone. A negative optimum exhibits a PPT entangled state that $W$ detects. Over the library, all 10,000 witnesses attained a negative optimum, with margins ranging from about #nbr[$10^(-7)$] to #nbr[$3 times 10^(-3)$] (median #nbr[$5 times 10^(-5)$]). This confirms that the canonical witnesses do carry genuine PPT-detection power once the state is optimised to them, as @indecomp-thm predicts, in contrast to their inertness on randomly drawn states (section @witness-findings); the small typical margin is itself the near-boundary effect.
+#figure(
+  table(
+    columns: (auto, auto, auto),
+    align: (left, left, right),
+    stroke: none,
+    inset: (x: 1em, y: 0.5em),
+    table.header(
+      [*Method*], [*Entangled*], [*Time*],
+    ),
+    table.hline(),
+    [Random PPT], [32.2% (5,000 / 15,534)], [$approx$ 7 h #super[[1]]],
+    [Random IPT], [59.5% (5,000 / 8,400)], [4.5 h],
+    [Witness SDP], [100% (10,000)], [3.6 m],
+    table.hline(y: 3, stroke: 0.5pt +gray),
+    table.hline(y: 4, stroke: 0.5pt +gray),
+    table.vline(x: 0, stroke: 0.5pt +gray, start: 3, end: 4),
+    table.vline(x: 3, stroke: 0.5pt +gray, start: 3, end: 4),
+  ),
+  caption: [The three candidate generators. _Entangled_ represents the fraction of produced states we could certify entangled by $"DPS"^2_(4times 4)$. Since the hierarchy may miss entangled states this is only a lower bound on the true prevalence. We generated one state per witness in the library and ran the random samplers until 5,000 valid states were found. The main takeaway is the efficiency with which a bound entangled state can be extracted. #super[[1]]~Generated across several interrupted sessions, so the logged time is unreliable; estimated about 50% above the symmetric run.
+  ],
+) <tbl-candidates>
 
-The second, `min_ppt2_witness` @min-ppt2-witness, restricts that minimisation from the whole PPT cone down to the composition manifold via the see-saw of section @gen-witness-ppt2, here run from #nbr[16] random restarts of at most #nbr[40] steps each.
+== Detecting entanglement <detection>
 
-The contrast between the two is the central result of this chapter. Every one of the 10,000 witnesses is live over the full PPT cone; yet when we ran the heavier see-saw, not one detected anything on the composition manifold. Every see-saw optimum was non-negative, ranging from #nbr[$1.557 times 10^(-16)$], to #nbr[$2 times 10^(-9)$] with median value #nbr[$2.985 times 10^(-10)$], flush against the separable boundary, but interestingly always positive, not even dipping below 0 from numerics. The witnesses that are demonstrably _live_ over the PPT cone go _dead_ once the state is constrained to be a composition of two PPT maps, exactly the signature expected if PPT2 holds in $4 times 4$: the composition manifold lies within the entanglement-breaking region, beyond the reach of every witness we can construct.
+Three criteria are in play: the two witness criteria, the cheap scalar (trace) test $tr[W rho] < 0$ and the stronger map (ampliation) test $(I times.o Phi_W)(rho) succ.eq.not 0$, as well as the level-2 DPS relaxation. Generating candidates and recording every criterion's score lets us compare them directly.
 
-== Detection methods compared <method-comparison>
+While we can generate witnesses in bulk, we find them essentially single-state detectors. Evaluating our library on the two random pools yielded nothing. Furthermore, cross evaluating them on the witness-derived states, that is $10^8$ trials, showed that each witness detects only state extracted from it.
 
-Recording every criterion's score on each state lets us compare the two detection routes directly. In practice they are far from equivalent. Of the #nbr[10,000] random bound entangled states that the level-2 DPS relaxation certifies, the PNCP witness library detects none. All witness tests were strictly positive. The tight, near-decomposable KMSZ witnesses thus entirely miss the generic bound entangled states that the DPS relaxation reaches.
+This leaves us with the DPS hierarchy as the more general detector. An unsurprising result, since the hierarchy has been the de facto standard for separability testing for two decades @Doherty_2004. But that generality is expensive compared to the witness criteria. The scalar test is a few inner products per state. A negligible cost, growing so gently in the number of witnesses that the library could be enlarged by orders of magnitude at little expense. The map test on the other hand requires an eigen-decomposition of a $16 times 16$ ampliation. At 10,000 witnesses the per-state cost begins to rival a single level-2 DPS solve, which as established is strictly more powerful. So the _stronger_ witness criterion costs about as much as the method that dominates it, meaning the only criterion cheap enough to scale may the weaker one.
 
-== Witness generality: cross-detection <cross-detection>
+The conclusion is blunt: a precomputed witness library is not worth building for general entanglement detection. It reaches nothing on generic states that DPS does not, and the variant that could scale is too weak to matter. Its value is narrow and specific, detecting only the very states it constructs. For the conjecture test we therefore resort to DPS on random states, keeping the witnesses for more targeted approaches.
 
-Each witness is built tight to one prescribed family of zeros, so it is natural to ask how far it reaches, i.e. how much variance there is in the states it can detect. We cross-evaluated every witness against the bound entangled state that the witness-restricted SDP extracted for every _other_ witness, separately for the scalar criterion (`cross_trace.jl`) and the map criterion (`cross_ampl.jl`). The result is stark: across all #nbr[$10^8$] witness--state pairs, neither criterion produced a single foreign detection. Both tests flagged only the 10,000 diagonal pairs and no other. This vanishing cross-detection rate in addition to the detection power comparison on the random states make it clear these witnesses behave as essentially disjoint detectors rather than a redundant cover.
+== Testing the PPT2 conjecture <ppt2-test>
 
-== Representation and symmetry effects <witness-findings>
+We test the conjecture two independent ways, neither of which finds a counterexample (see @tbl-ppt2).
 
-Two further observations concern the witness representations themselves rather than the search outcome.
+*Composing the candidates.* The direct route forms the composite of each candidate pair and tests it for entanglement. It is throttled by the quadratic blow-up: a pool of 5,000 states has $5000^2 = 2.5 times 10^7$ ordered pairs, and at a DPS solve apiece an exhaustive sweep would run for over a year. We therefore test only smaller batches. For example, a 100-state slice of each pool yields $100 times 100 = 10000$ ordered pairs. Computing across all three families yields 30,000 composite channels - DPS flagged none. Every composition of two PPT maps passed the test well within tolerance. This sweep is necessarily partial. It certifies only the slice it reaches, which is exactly why the second route carries the argument.
 
-First, the partial-transpose-invariant (symmetric) representatives are inert for our purpose. Symmetrized witnesses, the $M_0 = M_0^Gamma$ representatives returned by the construction, never flagged a single PPT entangled state in our experiments, and PPT states built in the symmetric `ppt_invariant` shape never appeared as counterexamples. This is _not_ because they are decomposable: the canonical KMSZ witness is exactly this partial-transpose-invariant representative (section @complexification), and it is provably indecomposable (Theorem @indecomp-thm), so it does carry genuine PPT-detection power. The inertness is instead a near-boundary effect. As argued previously, these witnesses are only tight and sit close to the decomposable cone, so whatever PPT entanglement they detect does so with a margin at the level of solver noise -- consistent with the small PPT-violation margins (of order $10^(-6)$) reported for the same construction by @Masse_2026. In practice such detections fall below our tolerance, so a fixed canonical witness rarely fires on a randomly drawn bound entangled state. The robust detection in the all-pairs search therefore rests on the DPS relaxation; the witness library's genuine reach is exposed instead when the state is optimised to the witness, which is the point of the witness-restricted SDP probe (section @ppt2-witness-probe). For the cheap per-state scan we use the canonical representative on generic, non-symmetrized candidates.
+*Searching the manifold directly.* Rather than test a fixed pool, the see-saw SDP asks whether a witness can be made to fire _anywhere_ on the composition manifold. For a fixed $W$ it minimises $tr[W C_(rho_1 compose rho_2)]$ over composites of two PPT maps; a negative optimum would be a counterexample witnessed by $W$. The objective is bilinear, hence non-convex. Despite that limitation, two things make it the more compelling route. Its constraints yield a much smaller SDP than the DPS hierarchy leading to substantially faster solves, and it replaces the essentially _spray and pray_ approach of the composition scan with a targeted optimization problem. Additionally, an interesting point is that it comes with a clean lower bound: the PPT-cone problem @min-ppt-witness, is exactly its convex relaxation.
 
-Second, we also probed the asymmetric representatives directly (section @asym-witnesses). On the real domain they behave exactly as the theory predicts: they remain positive on all real product vectors, and over many random trials never assigned a negative score to a real separable state. Whether this extends to the complex domain is open: the relations underlying the representation freedom (section @gram-freedom) vanish only on real product vectors, so an asymmetric representative that is a valid witness over $RR$ need not be block-positive over $CC$. Without an analytic guarantee the asymmetric witnesses proved too unreliable to use: the map test in particular can return a negative eigenvalue on a separable input -- a spurious detection -- precisely because an asymmetric representative need not be a positive map over $CC$. Establishing complex block-positivity, or restoring it by a suitable projection, is left for future work (section @future-work).
+Over the full PPT cone every one of the 10,000 witnesses is _live_, attaining a negative optimum $tr[W rho]$ from $-3.5 times 10^(-2)$ to $-6.1 times 10^(-8)$ (median $-5.3 times 10^(-5)$). The small typical margins sit right against the decomposable cone, matching the $approx 10^(-6)$ PPT-violation margins reported for the same construction by @Masse_2026. Yet once the state is constrained to the composition manifold, not one witness detects anything. Every see-saw optimum was non-negative, from $1.557 times 10^(-16)$ to $2.237 times 10^(-9)$ (median $2.985 times 10^(-10)$), flush against the separable boundary but never once crossing it, not even from numerical noise. 
 
-== Performance
+This contrast is the central result. Witnesses demonstrably _live_ over the full PPT cone go uniformly _dead_ once the state must be a composition of two PPT maps, exactly the signature expected if PPT2 holds in $4 times 4$. This is hardly conclusive evidence, but we choose to interpret it as a strong signal that the conjecture is not as surely false as previously believed, and that proving so will take a bit more work.
 
-A direct head-to-head comparison with the earlier MATLAB codebase @Bhardwaj_2020 is difficult, because the two implementations were built with different goals in mind. The original implementation drew random _integer_ matrices to produce more cosmetically pleasing certificates, however this approach is not random enough; frequently failing to generate a valid candidate, and requiring multiple recomputations. Our implementation can still generate candidates that way, but in the name of efficiency, it instead samples from a normal distribution; almost always succeeding on the first try. The two also rationalize differently. The prototype rationalizes the entire problem up front, paying for rational arithmetic throughout, whereas we rationalize only after the SDP is solved. The solver itself is largely language-independent, but the Julia code benefits from more efficient data handling and tighter solver integration.
+#figure(
+  table(
+    columns: (auto, auto, auto),
+    align: (left, right, right),
+    stroke: none,
+    inset: (x: 1em, y: 0.5em),
+    table.header(
+      [*Method*], [*Minimum*], [*Time*],
+    ),
+    table.hline(),
+    [Random PPT + DPS], [$6.2 times 10^(-3)$], [4.5 h],
+    [Random IPT + DPS], [$4.2 times 10^(-3)$], [4 h],
+    [Witness SDP + DPS], [$1.1 times 10^(-7)$], [3.5 h],
+    [See-saw SDP], [$1.6 times 10^(-16)$], [1.5 h],
+    table.hline(y: 4, stroke: 0.5pt + gray),
+    table.hline(y: 5, stroke: 0.5pt + gray),
+    table.vline(x: 0, stroke: 0.5pt + gray, start: 4, end: 5),
+    table.vline(x: 3, stroke: 0.5pt + gray, start: 4, end: 5),
+  ),
+  caption: [Comparison of independent routes to a PPT2 verdict. The first three test compositions of candidates from a slice of the generated pool against $"DPS"^2_(4times 4)$. The last solves a see-saw SDP directly for each witness in the library. All scores are strictly positive, robust even to numerical noise, so no counterexample was found.
+  ],
+) <tbl-ppt2>
 
-With those caveats, we report noticeably faster results. Previously generating a single candidate in $4 times 4$ could take several seconds if not minutes. We managed, through code optimization, compute power and multithreading (slightly unfair comparisons aside), to generate multiple candidates per second.
+== Performance Notes <performance>
 
-A more recent result @Masse_2026 yields a more direct comparison: the authors produce a library of 20000 witnesses by the KMSZ construction in $3 times 3$, stating it took "several days", albeit on a marginally weaker machine. Our result is still orders of magnitude faster.
+A brief note on the computational pitfalls of hermitian matrices: it may seem reasonable to look for a counterexample in the complex domain, allowing for imaginary entries would surely help, right? The issue is that the dimension of the search space doubles, and the SDP size grows accordingly. Our brief experiments showed a slowdown of $times 38$ when computing the DPS relaxation. The much smaller SDPs of the witness-restricted search are more forgiving, and allow for a complex extension. However, we find experimentally that the results are all essentially real. Where this is property comes from is unclear at this time, but we use it to project to the real domain and and avoid the complex slowdown. It may be an interesting question for future work whether the complex domain can be exploited in some way, and if it is a necessary property for finding a counterexample.
 
-= Discussion <discussion>
+Another implementation note for future work: MOSEK excels at solving convex optimization problems. Our most promising optimization problem for further research however is non-convex, which is not MOSEK's domain, but heavily studied elsewhere, in machine learning especially. So the alternating-SDP scheme is only one option among many. First-order or specialised non-convex methods, or a different solver for the outer loop, might search the manifold more effectively, and are a natural thing to explore further.
 
-This thesis develops a computational approach to the PPT2 conjecture and applies it to the smallest open case, $4 times 4$. The pipeline generates PPT candidate states, builds a library of provably indecomposable PNCP witnesses from the KMSZ construction, and screens composite channels for entanglement by two distinct routes, entanglement witnesses, and the DPS hierarchy. We use a post-solver rationalization step to turn numerical detection into exact certificates.
-
-No composition was ever found to be entangled. The strongest evidence comes not from the brute pairwise sweep, which the per-pair cost keeps necessarily partial, but from the witness-restricted SDP probe (section @ppt2-witness-probe): although every one of our witnesses detects a bound entangled state somewhere in the full PPT cone, not one detects anything once the state is constrained to be a composition of two PPT maps, with the see-saw optima sitting exactly on the separable boundary. Witnesses that are demonstrably live over the PPT cone go uniformly dead on the composition manifold, precisely the signature expected if the PPT2 conjecture holds.
-
-This is computational evidence, not a proof, and it inherits the limitations of its tools. The KMSZ witnesses, though provably indecomposable (Theorem @indecomp-thm), are only tight and lie close to the decomposable cone, so they detect PPT entanglement weakly. Much of the detection burden fell on the DPS relaxation, itself confined to level 2 in this dimension. A genuine counterexample, should one exist, might also lie in a region that our random candidate generation never reaches. What the methodology does provide is a reproducible, exactly-validated framework that returns a clean negative across every test we could run, and that extends in principle to the next open dimensions.
+Throughout, our computations are DPS-bound. Every stage that runs the level-2 relaxation: the two random-pool filters, and the witness-pool comparison, is dominated by it, while the witness scans on the same states are comparatively free. Taken together the timings point one way. Random search does not scale. The candidate space in $4 times 4$ is far too large to cover by sampling, the per-pair composition cost rules out an exhaustive sweep, and the witnesses do not generalise to rescue a sparse search. What was fast and decisive was everything _targeted_: states built from witnesses, and the see-saw optimising directly on the manifold. Further searches are therefore better off structured than random: the space is too large to check at random, but with some structure the optimization route looks genuinely promising.
 
 == Complexity and Practical Limits <complexity-limits>
 

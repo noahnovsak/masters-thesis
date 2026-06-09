@@ -51,6 +51,8 @@
   set math.equation(numbering: "(1)")
   show math.equation: set text(font: "New Computer Modern Math")
 
+  show raw: set text(size: 12pt, font: "New Computer Modern Mono")
+
   show link: it => {
   if type(it.dest) == str {
     set text(font: "New Computer Modern Mono")
