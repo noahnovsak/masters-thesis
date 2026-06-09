@@ -1,0 +1,216 @@
+##### FINAL SCAN (seed 42) started 2026-06-06 11:01:56 on 40 threads #####
+
+================================================================
+>>> [gen_pncp] starting 2026-06-06 11:01:56
+>>> cmd: julia --project=. -t 40 scripts/gen_pncp.jl --total 10000 --batch 200 -n 4 -m 4 --seed 42 -o results/final_seed42/pncp_4x4.jld2
+================================================================
+>>> [gen_pncp] done in 2352s (attempt 1). tail:
+Saved batch 46/50: 200/200 accepted (100.0%). Running total: 9200/9200 (100.0%).
+Saved batch 47/50: 200/200 accepted (100.0%). Running total: 9400/9400 (100.0%).
+Saved batch 48/50: 200/200 accepted (100.0%). Running total: 9600/9600 (100.0%).
+Saved batch 49/50: 200/200 accepted (100.0%). Running total: 9800/9800 (100.0%).
+Saved batch 50/50: 200/200 accepted (100.0%). Running total: 10000/10000 (100.0%).
+Done. Accepted 10000/10000 (100.0%).
+
+================================================================
+>>> [gen_witness_ppt] starting 2026-06-06 11:41:08
+>>> cmd: julia --project=. -t 40 scripts/gen_witness_ppt.jl -n 4 -m 4 --tol 1e-8 -f results/final_seed42/pncp_4x4.jld2 -o results/final_seed42/witness_ppt_4x4.jld2
+================================================================
+>>> [gen_witness_ppt] done in 214s (attempt 1). tail:
+Loaded 10000 forms; minimising over PPT states for 10000 on 40 threads...
+Saved 10000 witnessed states to results/final_seed42/witness_ppt_4x4.jld2.
+
+Witness-restricted PPT minimisation over 10000 witnesses (tol 1.0e-8):
+  certified a PPT entangled state: 10000/10000 (100.0%)
+  optimum tr(W·ρ):  min -0.03484, median -5.292e-5, max -6.057e-8
+
+================================================================
+>>> [compare_detection_asym] starting 2026-06-06 11:44:42
+>>> cmd: julia --project=. -t 40 scripts/compare_detection.jl --total 10000 --batch 200 -n 4 -m 4 --level 2 --tol 1e-8 --seed 42 -f results/final_seed42/pncp_4x4.jld2 -o results/final_seed42/cmp_asym_4x4.jld2
+================================================================
+results/final_seed42/run_all.sh: line 34: 1441713 Killed                  "$@" > "$log" 2>&1
+!!! [compare_detection_asym] attempt 1/3 failed (rc=137) after 31742s
+┌ Warning: Mosek.MSK_RES_TRM_STALL
+└ @ Ket ~/.julia/packages/Ket/Qqqjl/src/entanglement.jl:256
+┌ Warning: Mosek.MSK_RES_TRM_STALL
+└ @ Ket ~/.julia/packages/Ket/Qqqjl/src/entanglement.jl:256
+┌ Warning: Mosek.MSK_RES_TRM_STALL
+└ @ Ket ~/.julia/packages/Ket/Qqqjl/src/entanglement.jl:256
+┌ Warning: Mosek.MSK_RES_TRM_STALL
+└ @ Ket ~/.julia/packages/Ket/Qqqjl/src/entanglement.jl:256
+┌ Warning: Mosek.MSK_RES_TRM_STALL
+└ @ Ket ~/.julia/packages/Ket/Qqqjl/src/entanglement.jl:256
+┌ Warning: Mosek.MSK_RES_TRM_STALL
+└ @ Ket ~/.julia/packages/Ket/Qqqjl/src/entanglement.jl:256
+┌ Warning: Mosek.MSK_RES_TRM_STALL
+└ @ Ket ~/.julia/packages/Ket/Qqqjl/src/entanglement.jl:256
+Batches:  42%|█████████████████▋                        |  ETA: 11:50:48[K>>> [compare_detection_asym] retry 2/3 (resumable steps continue from checkpoint) 2026-06-06 20:33:54
+
+
+##### RELAUNCH (mosek cap + direct binary) 2026-06-06 21:50:47 #####
+##### FINAL SCAN (seed 42) started 2026-06-06 21:50:47 on 40 threads #####
+
+>>> [gen_pncp] already complete (marker results/final_seed42/.done_gen_pncp) — skipping.
+
+>>> [gen_witness_ppt] already complete (marker results/final_seed42/.done_gen_witness_ppt) — skipping.
+
+================================================================
+>>> [compare_detection_asym] starting 2026-06-06 21:50:47
+>>> cmd: /home/noahn/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/bin/julia --project=. -t 40 scripts/compare_detection.jl --total 10000 --batch 200 -n 4 -m 4 --level 2 --tol 1e-8 --seed 42 -f results/final_seed42/pncp_4x4.jld2 -o results/final_seed42/cmp_asym_4x4.jld2
+================================================================
+
+
+##### FULL RUN (DPS@16t, full 10000 scale) 2026-06-06 22:44:15 #####
+##### FINAL SCAN (seed 42) started 2026-06-06 22:44:16 on 40 threads #####
+
+>>> [gen_pncp] already complete (marker results/final_seed42/.done_gen_pncp) — skipping.
+
+>>> [gen_witness_ppt] already complete (marker results/final_seed42/.done_gen_witness_ppt) — skipping.
+
+================================================================
+>>> [compare_detection_asym] starting 2026-06-06 22:44:16
+>>> cmd: /home/noahn/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/bin/julia --project=. -t 16 scripts/compare_detection.jl --total 10000 --batch 200 -n 4 -m 4 --level 2 --tol 1e-8 --seed 42 -f results/final_seed42/pncp_4x4.jld2 -o results/final_seed42/cmp_asym_4x4.jld2
+================================================================
+
+
+##### FULL RUN v2 (warmup fix, DPS@16t) 2026-06-06 23:23:02 #####
+##### FINAL SCAN (seed 42) started 2026-06-06 23:23:02 on 40 threads #####
+
+>>> [gen_pncp] already complete (marker results/final_seed42/.done_gen_pncp) — skipping.
+
+>>> [gen_witness_ppt] already complete (marker results/final_seed42/.done_gen_witness_ppt) — skipping.
+
+================================================================
+>>> [compare_detection_asym] starting 2026-06-06 23:23:02
+>>> cmd: /home/noahn/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/bin/julia --project=. -t 16 scripts/compare_detection.jl --total 10000 --batch 200 -n 4 -m 4 --level 2 --tol 1e-8 --seed 42 -f results/final_seed42/pncp_4x4.jld2 -o results/final_seed42/cmp_asym_4x4.jld2
+================================================================
+
+
+##### FULL RUN v3 (fast config: -t40, default Mosek/BLAS) 2026-06-07 00:26:41 #####
+##### FINAL SCAN (seed 42) started 2026-06-07 00:26:41 on 40 threads #####
+
+>>> [gen_pncp] already complete (marker results/final_seed42/.done_gen_pncp) — skipping.
+
+>>> [gen_witness_ppt] already complete (marker results/final_seed42/.done_gen_witness_ppt) — skipping.
+
+================================================================
+>>> [compare_detection_asym] starting 2026-06-07 00:26:41
+>>> cmd: /home/noahn/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/bin/julia --project=. -t 40 scripts/compare_detection.jl --total 10000 --batch 200 -n 4 -m 4 --level 2 --tol 1e-8 --seed 42 -f results/final_seed42/pncp_4x4.jld2 -o results/final_seed42/cmp_asym_4x4.jld2
+================================================================
+
+
+##### RESUME after perf verify (detect_dps imag-drop, trace=dot) 2026-06-07 07:13:23 #####
+##### FINAL SCAN (seed 42) started 2026-06-07 07:13:23 on 40 threads #####
+
+>>> [gen_pncp] already complete (marker results/final_seed42/.done_gen_pncp) — skipping.
+
+>>> [gen_witness_ppt] already complete (marker results/final_seed42/.done_gen_witness_ppt) — skipping.
+
+================================================================
+>>> [compare_detection_asym] starting 2026-06-07 07:13:23
+>>> cmd: /home/noahn/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/bin/julia --project=. -t 40 scripts/compare_detection.jl --total 10000 --batch 200 -n 4 -m 4 --level 2 --tol 1e-8 --seed 42 -f results/final_seed42/pncp_4x4.jld2 -o results/final_seed42/cmp_asym_4x4.jld2
+================================================================
+
+
+##### RESUME (compare_detection shortened to 5000 each; asym truncated to 25 batches) 2026-06-07 09:02:16 #####
+##### FINAL SCAN (seed 42) started 2026-06-07 09:02:16 on 40 threads #####
+
+>>> [gen_pncp] already complete (marker results/final_seed42/.done_gen_pncp) — skipping.
+
+>>> [gen_witness_ppt] already complete (marker results/final_seed42/.done_gen_witness_ppt) — skipping.
+
+================================================================
+>>> [compare_detection_asym] starting 2026-06-07 09:02:16
+>>> cmd: /home/noahn/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/bin/julia --project=. -t 40 scripts/compare_detection.jl --total 5000 --batch 200 -n 4 -m 4 --level 2 --tol 1e-8 --seed 42 -f results/final_seed42/pncp_4x4.jld2 -o results/final_seed42/cmp_asym_4x4.jld2
+================================================================
+>>> [compare_detection_asym] done in 51s (attempt 1). tail:
+  PnCP ampliation             0      (0.0%)
+  PnCP (trace OR ampliation)  0      (0.0%)
+  ------------------------------------
+  DPS only (PnCP missed)      5000   (100.0%)
+  PnCP only (DPS missed)      0      (0.0%)
+  DPS and PnCP                0      (0.0%)
+
+================================================================
+>>> [compare_detection_sym] starting 2026-06-07 09:03:07
+>>> cmd: /home/noahn/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/bin/julia --project=. -t 40 scripts/compare_detection.jl --total 5000 --batch 200 -n 4 -m 4 --level 2 --tol 1e-8 --seed 42 --ppt-invariant -f results/final_seed42/pncp_4x4.jld2 -o results/final_seed42/cmp_sym_4x4.jld2
+================================================================
+>>> [compare_detection_sym] done in 16264s (attempt 1). tail:
+  PnCP ampliation             0      (0.0%)
+  PnCP (trace OR ampliation)  0      (0.0%)
+  ------------------------------------
+  DPS only (PnCP missed)      5000   (100.0%)
+  PnCP only (DPS missed)      0      (0.0%)
+  DPS and PnCP                0      (0.0%)
+
+================================================================
+>>> [detection_power_witness] starting 2026-06-07 13:34:11
+>>> cmd: /home/noahn/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/bin/julia --project=. -t 40 scripts/detection_power.jl -n 4 -m 4 --level 2 --tol 1e-8 -s results/final_seed42/witness_ppt_4x4.jld2 -f results/final_seed42/pncp_4x4.jld2 -o results/final_seed42/detection_power_witness_4x4.jld2
+================================================================
+>>> [detection_power_witness] done in 21896s (attempt 1). tail:
+  PnCP (trace OR ampliation)  10000  (100.0%)
+  ANY criterion               10000  (100.0%)
+  ------------------------------------
+  DPS only (PnCP missed)      0      (0.0%)
+  PnCP only (DPS missed)      0      (0.0%)
+  DPS and PnCP                10000  (100.0%)
+
+================================================================
+>>> [gen_witness_ppt2] starting 2026-06-07 19:39:07
+>>> cmd: /home/noahn/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/bin/julia --project=. -t 40 scripts/gen_witness_ppt2.jl -n 4 -m 4 --tol 1e-8 --restarts 16 --max_iter 40 --seed 42 -f results/final_seed42/pncp_4x4.jld2 -o results/final_seed42/witness_ppt2_4x4.jld2
+================================================================
+>>> [gen_witness_ppt2] done in 5610s (attempt 1). tail:
+Saved 0 counterexample candidates to results/final_seed42/witness_ppt2_4x4.jld2.
+
+See-saw PPT² witness search over 10000 witnesses (tol 1.0e-8):
+  detected a composition (PPT² counterexample candidate): 0/10000 (0.0%)
+  see-saw optimum tr(W·composite):  min 1.557e-16, median 2.985e-10, max 2.237e-9
+  (PPT² predicts every optimum ≥ 0; a value below -tol is a counterexample candidate.)
+
+================================================================
+>>> [test_ppt2_witness] starting 2026-06-07 21:12:37
+>>> cmd: /home/noahn/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/bin/julia --project=. -t 40 scripts/test_ppt2.jl -n 4 -m 4 --tol 1e-8 -s results/final_seed42/witness_ppt_4x4.jld2 -f results/final_seed42/pncp_4x4.jld2 --max-states 100 --with-dps -o results/final_seed42/ppt2_results/witness
+================================================================
+>>> [test_ppt2_witness] done in 12735s (attempt 1). tail:
+Loaded 100 states and 10000 forms. Pool of 10000 ordered pairs; criteria trace+ampliation+dps; testing on 40 threads (limit none).
+Ledger results/final_seed42/ppt2_results/witness/tested_witness_ppt_4x4.csv: 0/10000 pairs tested (0 detected); 10000 remaining.
+Warming up the per-pair path (single-threaded compile)...
+
+This run: tested 10000 compositions, 0 detected entangled.
+Cumulative: 10000 tested, 0 detected (of 10000 possible pairs).
+
+================================================================
+>>> [test_ppt2_asym] starting 2026-06-08 00:44:52
+>>> cmd: /home/noahn/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/bin/julia --project=. -t 40 scripts/test_ppt2.jl -n 4 -m 4 --tol 1e-8 -s results/final_seed42/cmp_asym_4x4.jld2 -f results/final_seed42/pncp_4x4.jld2 --max-states 100 --with-dps -o results/final_seed42/ppt2_results/asym
+================================================================
+>>> [test_ppt2_asym] done in 16599s (attempt 1). tail:
+Loaded 100 states and 10000 forms. Pool of 10000 ordered pairs; criteria trace+ampliation+dps; testing on 40 threads (limit none).
+Ledger results/final_seed42/ppt2_results/asym/tested_cmp_asym_4x4.csv: 0/10000 pairs tested (0 detected); 10000 remaining.
+Warming up the per-pair path (single-threaded compile)...
+
+This run: tested 10000 compositions, 0 detected entangled.
+Cumulative: 10000 tested, 0 detected (of 10000 possible pairs).
+
+================================================================
+>>> [test_ppt2_sym] starting 2026-06-08 05:21:31
+>>> cmd: /home/noahn/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/bin/julia --project=. -t 40 scripts/test_ppt2.jl -n 4 -m 4 --tol 1e-8 -s results/final_seed42/cmp_sym_4x4.jld2 -f results/final_seed42/pncp_4x4.jld2 --max-states 100 --with-dps -o results/final_seed42/ppt2_results/sym
+================================================================
+>>> [test_ppt2_sym] done in 15334s (attempt 1). tail:
+Loaded 100 states and 10000 forms. Pool of 10000 ordered pairs; criteria trace+ampliation+dps; testing on 40 threads (limit none).
+Ledger results/final_seed42/ppt2_results/sym/tested_cmp_sym_4x4.csv: 0/10000 pairs tested (0 detected); 10000 remaining.
+Warming up the per-pair path (single-threaded compile)...
+
+This run: tested 10000 compositions, 0 detected entangled.
+Cumulative: 10000 tested, 0 detected (of 10000 possible pairs).
+
+##### FINAL SCAN complete 2026-06-08 09:37:05 #####
+step	seconds	hh:mm:ss	start	end	note1	note2
+gen_pncp	2352	00:39:12	2026-06-06 11:01:56	2026-06-06 11:41:08	attempts=1	rc=0
+gen_witness_ppt	214	00:03:34	2026-06-06 11:41:08	2026-06-06 11:44:42	attempts=1	rc=0
+compare_detection_asym	51	00:00:51	2026-06-07 09:02:16	2026-06-07 09:03:07	attempts=1	rc=0
+compare_detection_sym	16264	04:31:04	2026-06-07 09:03:07	2026-06-07 13:34:11	attempts=1	rc=0
+detection_power_witness	21896	06:04:56	2026-06-07 13:34:11	2026-06-07 19:39:07	attempts=1	rc=0
+gen_witness_ppt2	5610	01:33:30	2026-06-07 19:39:07	2026-06-07 21:12:37	attempts=1	rc=0
+test_ppt2_witness	12735	03:32:15	2026-06-07 21:12:37	2026-06-08 00:44:52	attempts=1	rc=0
+test_ppt2_asym	16599	04:36:39	2026-06-08 00:44:52	2026-06-08 05:21:31	attempts=1	rc=0
+test_ppt2_sym	15334	04:15:34	2026-06-08 05:21:31	2026-06-08 09:37:05	attempts=1	rc=0
