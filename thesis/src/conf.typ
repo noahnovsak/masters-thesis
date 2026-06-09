@@ -53,7 +53,6 @@
 
   show link: it => {
   if type(it.dest) == str {
-    // external URL (e.g. "https://...")
     set text(font: "New Computer Modern Mono")
     it
   } else {
@@ -83,37 +82,6 @@
     strong[#it.supplement #it.counter.display(it.numbering)#it.separator]
     it.body
   }
-
-  // --- COVER PAGE (Slovene) ---
-  {
-    set align(center)
-    v(1fr)
-    text(size: 14pt, smallcaps[Univerza v Ljubljani])
-    linebreak()
-    text(size: 14pt, smallcaps[Fakulteta za računalništvo in informatiko])
-    v(2fr)
-    text(size: 14pt, author)
-    v(0em)
-    text(size: 18pt, weight: "bold", title_sl)
-    v(2em)
-    text(size: 12pt, )[
-      MAGISTRSKO DELO
-
-      MAGISTRSKI ŠTUDIJSKI PROGRAM DRUGE STOPNJE \
-      RAČUNALNIŠTVO IN INFORMATIKA \
-      #smallcaps("Smer: Podatkovne Vede")
-    ]
-    v(3fr)
-    text(size: 12pt)[#smallcaps("Mentor"): #mentor]
-    if cosupervisor != none {
-      linebreak()
-      text(size: 12pt)[#smallcaps("Somentor"): #cosupervisor]
-    }
-    v(1.5em)
-    text(size: 12pt)[Ljubljana, #str(year)]
-    v(1fr)
-  }
-  pagebreak()
 
   // --- TITLE PAGE (English) ---
   {
@@ -146,6 +114,37 @@
   }
   pagebreak()
 
+  // --- COVER PAGE (Slovene) ---
+  if false {
+    set align(center)
+    v(1fr)
+    text(size: 14pt, smallcaps[Univerza v Ljubljani])
+    linebreak()
+    text(size: 14pt, smallcaps[Fakulteta za računalništvo in informatiko])
+    v(2fr)
+    text(size: 14pt, author)
+    v(0em)
+    text(size: 18pt, weight: "bold", title_sl)
+    v(2em)
+    text(size: 12pt)[
+      MAGISTRSKO DELO
+
+      MAGISTRSKI ŠTUDIJSKI PROGRAM DRUGE STOPNJE \
+      RAČUNALNIŠTVO IN INFORMATIKA \
+      #smallcaps("Smer: Podatkovne Vede")
+    ]
+    v(3fr)
+    text(size: 12pt)[#smallcaps("Mentor"): #mentor]
+    if cosupervisor != none {
+      linebreak()
+      text(size: 12pt)[#smallcaps("Somentor"): #cosupervisor]
+    }
+    v(1.5em)
+    text(size: 12pt)[Ljubljana, #str(year)]
+    v(1fr)
+  }
+  pagebreak()
+
   // --- COPYRIGHT / LICENSE PAGE (CC BY-SA 4.0) ---
   {
     set text(size: 11pt)
@@ -158,9 +157,9 @@
     align(center, grid(
       columns: 3,
       gutter: 1em,
-      image("license/cc_cc_30.svg", height: 0.9cm),
-      image("license/cc_by_30.svg", height: 0.9cm),
-      image("license/cc_sa_30.svg", height: 0.9cm),
+      image("figures/cc_cc.svg", height: 1cm),
+      image("figures/cc_by.svg", height: 1cm),
+      image("figures/cc_sa.svg", height: 1cm),
     ))
     if code_url != none {
       v(3em)
