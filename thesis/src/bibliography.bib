@@ -1,566 +1,552 @@
-% Banff workshop report; broad backdrop on operator structures in quantum information.
-@article{Banff,
-   author={Ruskai, Mary Beth and Junge, Marius and Kribs, David and Hayden, Patrick and Winter, Andreas},
-   title={Operator structures in quantum information theory},
-   journal={Final report of Banff International Research Station workshop: Operator structures in Quantum Information Theory},
-   year={2012},
+% ============================================================================
+% Bibliography for "A Software Approach to the PPT2 Conjecture".
+% Shared by main.typ and topic_proposal.typ; rendered in IEEE style.
+% Entries are grouped thematically; Typst prints only the cited ones.
+% ============================================================================
+
+% ---------------------------------------------------------------------------
+% The PPT2 conjecture and partial results
+% ---------------------------------------------------------------------------
+
+% Banff workshop report where M. Christandl posed the PPT2 conjecture (Problem G).
+@techreport{Banff,
+  author      = {Ruskai, Mary Beth and Junge, Marius and Kribs, David and Hayden, Patrick and Winter, Andreas},
+  title       = {Operator structures in quantum information theory},
+  institution = {Banff International Research Station},
+  type        = {Final report of BIRS workshop 12w5084},
+  year        = {2012},
 }
 
-% Bound entanglement as a cryptographic resource: motivates why bound entangled states matter.
-@article{Horodecki_2005,
-   author={Horodecki, Karol and Horodecki, Michał and Horodecki, Paweł and Oppenheim, Jonathan},
-   title={Secure Key from Bound Entanglement},
-   journal={Phys. Rev. Lett.},
-   volume={94},
-   year={2005},
-}
-
-% Further application of bound entanglement (private states, data hiding); operational motivation.
-@article{Christandl_2017,
-   author={Christandl, Matthias and Ferrara, Roberto},
-   title={Private States, Quantum Data Hiding, and the Swapping of Perfect Secrecy},
-   journal={Phys. Rev. Lett.},
-   volume={119},
-   year={2017},
-}
-
-% PPT2 conjecture proven for n=3; one of the known partial results.
-@article{Chen_2019,
-   author={Chen, Lin and Yang, Yu and Tang, Wai-Shing},
-   title={Positive-partial-transpose square conjecture for $n=3$},
-   journal={Phys. Rev. A},
-   volume={99},
-   year={2019},
-}
-
-% States the PPT2 conjecture (composition of PPT maps is entanglement breaking): the central object of study.
+% States and studies the PPT2 conjecture; proves it for n=3 and for Gaussian channels.
 @article{Christandl_2019,
-   author={Christandl, Matthias and Müller-Hermes, Alexander and Wolf, Michael M.},
-   title={When Do Composed Maps Become Entanglement Breaking?},
-   journal={Ann. Henri Poincaré},
-   volume={20},
-   year={2019},
+  author  = {Christandl, Matthias and M{\"u}ller-Hermes, Alexander and Wolf, Michael M.},
+  title   = {When do composed maps become entanglement breaking?},
+  journal = {Ann. Henri Poincar{\'e}},
+  volume  = {20},
+  year    = {2019},
 }
 
-% PPT2 conjecture proven for all Choi-type maps; the symmetric families where it already holds.
+% Independent proof of the PPT2 conjecture for n=3.
+@article{Chen_2019,
+  author  = {Chen, Lin and Yang, Yu and Tang, Wai-Shing},
+  title   = {Positive-partial-transpose square conjecture for n = 3},
+  journal = {Phys. Rev. A},
+  volume  = {99},
+  year    = {2019},
+}
+
+% PPT2 conjecture proven for all Choi-type maps in every dimension.
 @article{Singh_2022,
-   author={Singh, Satvik and Nechita, Ion},
-   title={The PPT$$^2$$ Conjecture Holds for All Choi-Type Maps},
-   journal={Ann. Henri Poincaré},
-   volume={23},
-   year={2022},
+  author  = {Singh, Satvik and Nechita, Ion},
+  title   = {The PPT² conjecture holds for all Choi-type maps},
+  journal = {Ann. Henri Poincar{\'e}},
+  volume  = {23},
+  year    = {2022},
 }
 
-% Defines the DPS hierarchy of separability relaxations: our baseline detection method.
-@article{Doherty_2004,
-   author={Doherty, Andrew C. and Parrilo, Pablo A. and Spedalieri, Federico M.},
-   title={Complete family of separability criteria},
-   journal={Phys. Rev. A},
-   volume={69},
-   year={2004},
+% Asymptotic PPT2: iterates of unital/trace-preserving PPT maps approach the EB set.
+@article{Kennedy_2018,
+  author  = {Kennedy, Matthew and Manor, Nicholas A. and Paulsen, Vern I.},
+  title   = {Composition of {PPT} maps},
+  journal = {Quantum Inf. Comput.},
+  volume  = {18},
+  year    = {2018},
 }
 
-% SOS hierarchy on the sphere; SOS/SDP background for the witness-construction route.
-@article{Fang_2020,
-   author={Fang, Kun and Fawzi, Hamza},
-   title={The sum-of-squares hierarchy on the sphere and applications in quantum information theory},
-   journal={Math. Program.},
-   volume={190},
-   year={2020},
+% Unital PPT channels become entanglement breaking after finitely many compositions.
+@article{Rahaman_2018,
+  author  = {Rahaman, Mizanur and Jaques, Samuel and Paulsen, Vern I.},
+  title   = {Eventually entanglement breaking maps},
+  journal = {J. Math. Phys.},
+  volume  = {59},
+  year    = {2018},
+}
+
+% Compositions of independent random PPT states are generically separable.
+@article{Collins_2018,
+  author  = {Collins, Beno{\^i}t and Yin, Zhi and Zhong, Ping},
+  title   = {The {PPT} square conjecture holds generically for some classes of independent states},
+  journal = {J. Phys. A: Math. Theor.},
+  volume  = {51},
+  year    = {2018},
+}
+
+% Recent structured progress on PPT2 via Cartan-covariant channels.
+@article{Prudhoe_2025,
+  author        = {Prudhoe, Sean},
+  title         = {Cartan-covariant quantum channels and the PPT² conjecture},
+  journal       = {arXiv:2501.03959 [quant-ph]},
+  year          = {2025},
 }
 
 % Prior computational investigation of the PPT2 conjecture in higher dimensions.
 @article{jin2020,
-   author={Ryan Jin},
-   title={Investigation of the PPT Squared Conjecture for High Dimensions},
-   journal={arXiv:2010.15554},
-   year={2020},
+  author        = {Jin, Ryan},
+  title         = {Investigation of the {PPT} squared conjecture for high dimensions},
+  journal       = {arXiv:2010.15554 [quant-ph]},
+  year          = {2020},
 }
 
-% Practical SOS relaxations for entanglement detection; basis of the PNCP witness pipeline.
-@article{bhardwaj2020,
-   author={Bhardwaj, Abhishek},
-   title={A Practical Approach to SOS Relaxations for Detecting Quantum Entanglement},
-   journal={Journal of Optimization Theory and Applications},
-   volume={198},
-   year={2023},
+% Diagonal unitary/orthogonal covariant channels; symmetric families behind Choi-type results.
+@article{Singh_2020,
+  author  = {Singh, Satvik and Nechita, Ion},
+  title   = {Diagonal unitary and orthogonal symmetries in quantum theory {II}: evolution operators},
+  journal = {Quantum},
+  volume  = {5},
+  year    = {2021},
 }
 
-% Theoretical underpinning of the non-negative-polynomial / SOS / moment-problem machinery we use.
-@phdthesis{phdthesis,
-   author={Bhardwaj, Abhishek},
-   title={Non-negative Polynomials, Sums of Squares & The Moment Problem},
-   publisher={Australian National University},
-   year={2020},
+% ---------------------------------------------------------------------------
+% Entanglement: foundations, criteria, and bound entanglement
+% ---------------------------------------------------------------------------
+
+% Comprehensive entanglement review; cited throughout for definitions and witnesses.
+@article{Horodecki_2009,
+  author  = {Horodecki, Ryszard and Horodecki, Pawe{\l} and Horodecki, Micha{\l} and Horodecki, Karol},
+  title   = {Quantum entanglement},
+  journal = {Rev. Mod. Phys.},
+  volume  = {81},
+  year    = {2009},
 }
 
-% Improved DPS hierarchy with KKT constraints giving finite convergence; the main hierarchy enhancement we discuss.
-@article{Harrow_2017,
-   author={Harrow, Aram W. and Natarajan, Anand and Wu, Xiaodi},
-   title={An Improved Semidefinite Programming Hierarchy for Testing Entanglement},
-   journal={Communications in Mathematical Physics},
-   volume={352},
-   year={2017},
+% Survey of entanglement detection methods; the catalogue of separability criteria.
+@article{Guhne_2009,
+  author  = {G{\"u}hne, Otfried and T{\'o}th, G{\'e}za},
+  title   = {Entanglement detection},
+  journal = {Phys. Rep.},
+  volume  = {474},
+  year    = {2009},
 }
 
 % Original PPT (positive partial transpose) separability criterion.
 @article{Peres_1996,
-   author={Peres, Asher},
-   title={Separability Criterion for Density Matrices},
-   journal={Physical Review Letters},
-   volume={77},
-   year={1996},
+  author  = {Peres, Asher},
+  title   = {Separability criterion for density matrices},
+  journal = {Phys. Rev. Lett.},
+  volume  = {77},
+  year    = {1996},
 }
 
-% Separability is equivalent to PPT only for 2x2 and 2x3; grounds the n<=2 part of the conjecture.
+% PPT is sufficient for separability exactly in 2x2 and 2x3; positive-map characterization.
 @article{Horodecki_1996,
-   author={Horodecki, Michal and Horodecki, Pawel and Horodecki, Ryszard},
-   title={Separability of mixed states: necessary and sufficient conditions},
-   journal={Physics Letters A},
-   volume={223},
-   year={1996},
+  author  = {Horodecki, Micha{\l} and Horodecki, Pawe{\l} and Horodecki, Ryszard},
+  title   = {Separability of mixed states: necessary and sufficient conditions},
+  journal = {Phys. Lett. A},
+  volume  = {223},
+  year    = {1996},
 }
 
-% Comprehensive entanglement review; cited throughout for definitions, witnesses, and the map/trace condition.
-@article{Horodecki_2009,
-   author={Horodecki, Ryszard and Horodecki, Pawel and Horodecki, Michal and Horodecki, Karol},
-   title={Quantum entanglement},
-   journal={Reviews of Modern Physics},
-   volume={81},
-   year={2009},
-}
-
-% Choi's theorem: complete positivity is equivalent to PSD Choi matrix; basis of the Choi-Jamiolkowski isomorphism.
-@article{Choi_1975,
-   author={Choi, Man-Duen},
-   title={Completely positive linear maps on complex matrices},
-   journal={Linear Algebra and its Applications},
-   volume={10},
-   year={1975},
-}
-
-% NP-hardness of separability testing; justifies relying on one-sided relaxations.
-@misc{Gharibian_2009,
-   author={Sevag Gharibian},
-   title={Strong NP-Hardness of the Quantum Separability Problem},
-   journal={arXiv:0810.4507},
-   year={2009},
-}
-
-% Optimization of entanglement witnesses; cited for the non-optimality limitation of our witnesses.
-@article{Lewenstein_2000,
-   author={Lewenstein, M. and Kraus, B. and Cirac, J. I. and Horodecki, P.},
-   title={Optimization of entanglement witnesses},
-   journal={Physical Review A},
-   volume={62},
-   year={2000},
-}
-
-% Positive-map / non-negative-polynomial correspondence and the KMSZ construction of PNCP maps.
-@article{Klep_2017,
-   author={Klep, Igor and McCullough, Scott and Šivic, Klemen and Zalar, Aljaž},
-   title={There Are Many More Positive Maps Than Completely Positive Maps},
-   journal={International Mathematics Research Notices},
-   volume={2019},
-   year={2017},
-}
-
-% Independent, contemporaneous work using the same KMSZ construction for entanglement
-% detection (not for the PPT2 conjecture). Cited for the indecomposability, complexification,
-% and optimal/tight/extremal characterisation of the generated witnesses. Our implementation
-% and PPT2 search were developed independently.
-@misc{Masse_2026,
-   author={Mass\'e, Ga\"el and Rezig, Mounir and Catala, Paul and Scheiner, Santiago and Serradesanferm C\'ordoba, Laia and Oudot, Enky and Markham, Damian},
-   title={Detecting bipartite entanglement with PnCP maps and non-negative polynomials},
-   year={2026},
-   eprint={2605.30426},
-   archivePrefix={arXiv},
-   primaryClass={quant-ph},
-}
-
-% Range criterion and first PPT entangled states; cited as a separability criterion.
+% Range criterion and the first PPT entangled states.
 @article{Horodecki_1997,
-   author={Horodecki, Pawel},
-   title={Separability criterion and inseparable mixed states with positive partial transposition},
-   journal={Physics Letters A},
-   volume={232},
-   pages={333--339},
-   year={1997},
-}
-
-% Reduction criterion for separability.
-@article{Horodecki_1999,
-   author={Horodecki, Micha\l{} and Horodecki, Pawe\l{}},
-   title={Reduction criterion of separability and limits for a class of distillation protocols},
-   journal={Physical Review A},
-   volume={59},
-   pages={4206},
-   year={1999},
-}
-
-% Majorization criterion for separability.
-@article{Nielsen_2001,
-   author={Nielsen, Michael A. and Kempe, Julia},
-   title={Separable States Are More Disordered Globally than Locally},
-   journal={Physical Review Letters},
-   volume={86},
-   pages={5184},
-   year={2001},
-}
-
-% Standard SDP reference: primal/dual form, interior-point complexity.
-@article{Vandenberghe_1996,
-   author={Vandenberghe, Lieven and Boyd, Stephen},
-   title={Semidefinite programming},
-   journal={SIAM Review},
-   volume={38},
-   number={1},
-   pages={49--95},
-   year={1996},
-}
-
-% Specialized SDP hierarchy for diagonal-unitary-invariant states; cited as a symmetry-restricted improvement.
-@misc{Britz_2025,
-      author={Jonas Britz and Monique Laurent},
-      title={Semidefinite hierarchies for diagonal unitary invariant bipartite quantum states},
-      year={2025},
-      eprint={2512.06551},
-      url={https://arxiv.org/abs/2512.06551},
-}
-
-% Survey of entanglement detection methods; cited for the catalogue of separability criteria.
-@article{Guhne_2009,
-   author={G{\"u}hne, Otfried and T{\'o}th, G{\'e}za},
-   title={Entanglement detection},
-   journal={Physics Reports},
-   volume={474},
-   pages={1--75},
-   year={2009},
-   doi={10.1016/j.physrep.2009.02.004},
-}
-
-% CCNR / realignment criterion, independent of PPT and able to detect some bound entanglement.
-@article{Chen_2003,
-   author={Chen, Kai and Wu, Ling-An},
-   title={A matrix realignment method for recognizing entanglement},
-   journal={Quantum Information and Computation},
-   volume={3},
-   pages={193--202},
-   year={2003},
-}
-
-% The SDP solver used for all our semidefinite programs.
-@misc{MOSEK,
-   author={{MOSEK ApS}},
-   title={The {MOSEK} Optimization Toolbox},
-   year={2024},
-   url={https://www.mosek.com},
-}
-
-% Unextendible product bases construction of bound entangled states; an alternative candidate source.
-@article{Bennett_1999,
-   author={Bennett, Charles H. and DiVincenzo, David P. and Mor, Tal and Shor, Peter W. and Smolin, John A. and Terhal, Barbara M.},
-   title={Unextendible Product Bases and Bound Entanglement},
-   journal={Physical Review Letters},
-   volume={82},
-   pages={5385},
-   year={1999},
-   doi={10.1103/PhysRevLett.82.5385},
-}
-
-% Antisymmetric-subspace bound entangled states; an alternative structured candidate construction.
-@article{Sindici_2018,
-   author={Sindici, Enrico and Piani, Marco},
-   title={Simple class of bound entangled states based on the properties of the antisymmetric subspace},
-   journal={Physical Review A},
-   volume={97},
-   pages={032319},
-   year={2018},
-   doi={10.1103/PhysRevA.97.032319},
-}
-
-% Bound entanglement in symmetric random induced states; a state-of-the-art random candidate source.
-@article{Louvet_2025,
-   author={Louvet, Jonathan and Damanet, Fran\c{c}ois and Bastin, Thierry},
-   title={Bound entanglement in symmetric random induced states},
-   journal={Physical Review A},
-   year={2025},
-   eprint={2510.23480},
-   url={https://arxiv.org/abs/2510.23480},
-}
-
-% Computational-complexity treatment of the separability problem; complements the NP-hardness reference.
-@article{Ioannou_2006,
-   author={Ioannou, Lawrence M.},
-   title={Computational complexity of the quantum separability problem},
-   journal={Quantum Information and Computation},
-   volume={7},
-   year={2006},
-   doi={10.26421/QIC7.4-5},
-}
-
-% Concise modern reference for the Choi representation of completely positive maps.
-@article{Homa_2024,
-   author={Homa, Gábor and Ortega, Alejandro and Koniorczyk, Mátyás},
-   title={Choi representation of completely positive maps in brief},
-   journal={Zeitschrift für Naturforschung A},
-   year={2024},
-   doi={10.1515/zna-2024-0144},
-}
-
-% Practical construction of positive-but-not-completely-positive maps; directly relevant to PNCP witness generation.
-@misc{Bhardwaj_2020,
-   author={Bhardwaj, Abhishek},
-   title={Practical construction of positive maps which are not completely positive},
-   year={2020},
-   eprint={2001.01181},
-   url={https://arxiv.org/abs/2001.01181},
-}
-
-% Diagonal unitary/orthogonal symmetric channels; the symmetric families relevant to the symmetry discussion.
-@article{Singh_2020,
-   author={Singh, Satvik and Nechita, Ion},
-   title={Diagonal unitary and orthogonal symmetries in quantum theory: II. Evolution operators},
-   journal={Quantum},
-   volume={5},
-   pages={519},
-   year={2021},
-   doi={10.22331/q-2021-08-09-519},
-}
-
-% Recent structured progress on PPT2 via Cartan-covariant channels.
-@misc{Prudhoe_2025,
-   author={Prudhoe, S.},
-   title={Cartan-covariant Quantum Channels and the PPT$^2$ conjecture},
-   year={2025},
-   eprint={2501.03959},
-   url={https://arxiv.org/abs/2501.03959},
-}
-
-% Entanglement detection by witness search and global optimization; methodological point of comparison.
-@article{IoannouTravaglione_2006,
-   author={Ioannou, Lawrence M. and Travaglione, Benjamin C.},
-   title={Quantum separability and entanglement detection via entanglement-witness search and global optimization},
-   journal={Physical Review A},
-   volume={73},
-   pages={052314},
-   year={2006},
-   doi={10.1103/PhysRevA.73.052314},
-}
-
-% Extremal bound entangled states; relevant to structured candidate generation.
-@article{Badziag_2014,
-   author={Badziąg, Paweł and Horodecki, Karol and Horodecki, Michał and Jenkinson, Justin and Szarek, Stanisław J.},
-   title={Bound entangled states with extremal properties},
-   journal={Physical Review A},
-   volume={90},
-   pages={012301},
-   year={2014},
-   doi={10.1103/PhysRevA.90.012301},
+  author  = {Horodecki, Pawe{\l}},
+  title   = {Separability criterion and inseparable mixed states with positive partial transposition},
+  journal = {Phys. Lett. A},
+  volume  = {232},
+  year    = {1997},
 }
 
 % Introduces bound entanglement: PPT states that are entangled yet non-distillable.
 @article{Horodecki_1998,
-   author={Horodecki, Michał and Horodecki, Paweł and Horodecki, Ryszard},
-   title={Mixed-State Entanglement and Distillation: Is there a ``Bound'' Entanglement in Nature?},
-   journal={Physical Review Letters},
-   volume={80},
-   pages={5239},
-   year={1998},
-   doi={10.1103/PhysRevLett.80.5239},
+  author  = {Horodecki, Micha{\l} and Horodecki, Pawe{\l} and Horodecki, Ryszard},
+  title   = {Mixed-state entanglement and distillation: is there a “bound” entanglement in nature?},
+  journal = {Phys. Rev. Lett.},
+  volume  = {80},
+  year    = {1998},
 }
 
-% Searching for extremal PPT entangled states; directly related to our candidate-generation problem.
-@article{Augusiak_2010,
-   author={Augusiak, Remigiusz and Grabowski, Janusz and Kuś, Marek and Lewenstein, Maciej},
-   title={Searching for extremal PPT entangled states},
-   journal={Optics Communications},
-   volume={283},
-   pages={805},
-   year={2010},
-   doi={10.1016/j.optcom.2009.10.050},
+% Reduction criterion for separability.
+@article{Horodecki_1999,
+  author  = {Horodecki, Micha{\l} and Horodecki, Pawe{\l}},
+  title   = {Reduction criterion of separability and limits for a class of distillation protocols},
+  journal = {Phys. Rev. A},
+  volume  = {59},
+  year    = {1999},
 }
 
-% Rank-based detection of bound entanglement; an alternative detection strategy.
-@article{Gulati_2025,
-   author={Gulati, Aabhas},
-   title={Rank-based entanglement detection for bound entangled states},
-   journal={Physical Review A},
-   year={2025},
-   doi={10.1103/4r1h-njb6},
+% Majorization criterion for separability.
+@article{Nielsen_2001,
+  author  = {Nielsen, Michael A. and Kempe, Julia},
+  title   = {Separable states are more disordered globally than locally},
+  journal = {Phys. Rev. Lett.},
+  volume  = {86},
+  year    = {2001},
 }
 
-% Witness class with a realignment-like (CCNR) criterion; related witness construction.
-@misc{Jannesary_2023,
-   author={Jannesary, Vahid and Karimipour, Vahid and Chruściński, Dariusz},
-   title={A class of entanglement witnesses and a realignment-like criterion},
-   year={2023},
-   eprint={2308.07019},
-   url={https://arxiv.org/abs/2308.07019},
+% CCNR / realignment criterion, independent of PPT.
+@article{Chen_2003,
+  author  = {Chen, Kai and Wu, Ling-An},
+  title   = {A matrix realignment method for recognizing entanglement},
+  journal = {Quantum Inf. Comput.},
+  volume  = {3},
+  year    = {2003},
 }
 
-% Construction of indecomposable (non-decomposable) witnesses, needed to detect PPT entanglement.
-@article{Chruscinski_2008,
-   author={Chruściński, Dariusz and Kossakowski, Andrzej},
-   title={How to construct indecomposable entanglement witnesses},
-   journal={Journal of Physics A: Mathematical and Theoretical},
-   volume={41},
-   pages={145301},
-   year={2008},
-   doi={10.1088/1751-8113/41/14/145301},
+% Choi's theorem: complete positivity is equivalent to a PSD Choi matrix.
+@article{Choi_1975,
+  author  = {Choi, Man-Duen},
+  title   = {Completely positive linear maps on complex matrices},
+  journal = {Linear Algebra Appl.},
+  volume  = {10},
+  year    = {1975},
 }
 
-% Constructing optimal entanglement witnesses; relevant to the witness-optimality limitation.
-@article{Chruscinski_2009,
-   author={Chruściński, Dariusz and Pytel, Justyna and Sarbicki, Gniewomir},
-   title={Constructing optimal entanglement witnesses},
-   journal={Physical Review A},
-   volume={80},
-   pages={062314},
-   year={2009},
-   doi={10.1103/PhysRevA.80.062314},
+% Concise modern reference for the Choi representation of completely positive maps.
+@article{Homa_2024,
+  author  = {Homa, G{\'a}bor and Ortega, Alejandro and Koniorczyk, M{\'a}ty{\'a}s},
+  title   = {Choi representation of completely positive maps in brief},
+  journal = {Z. Naturforsch. A},
+  volume  = {79},
+  year    = {2024},
 }
 
-% Necessary and sufficient conditions for bipartite entanglement; separability characterization.
-@article{Sperling_2009,
-   author={Sperling, J. and Vogel, W.},
-   title={Necessary and sufficient conditions for bipartite entanglement},
-   journal={Physical Review A},
-   volume={79},
-   pages={022318},
-   year={2009},
-   doi={10.1103/PhysRevA.79.022318},
+% Unextendible product bases construction of bound entangled states.
+@article{Bennett_1999,
+  author  = {Bennett, Charles H. and DiVincenzo, David P. and Mor, Tal and Shor, Peter W. and Smolin, John A. and Terhal, Barbara M.},
+  title   = {Unextendible product bases and bound entanglement},
+  journal = {Phys. Rev. Lett.},
+  volume  = {82},
+  year    = {1999},
 }
 
-% Multipartite extension of the DPS hierarchy; shows the hierarchy generalizes beyond the bipartite case.
-@article{Doherty_2005,
-   author={Doherty, Andrew C. and Parrilo, Pablo A. and Spedalieri, Federico M.},
-   title={Detecting multipartite entanglement},
-   journal={Physical Review A},
-   volume={71},
-   pages={032333},
-   year={2005},
-   doi={10.1103/PhysRevA.71.032333},
+% Bound entanglement as a cryptographic resource: secure key distillation.
+@article{Horodecki_2005,
+  author  = {Horodecki, Karol and Horodecki, Micha{\l} and Horodecki, Pawe{\l} and Oppenheim, Jonathan},
+  title   = {Secure key from bound entanglement},
+  journal = {Phys. Rev. Lett.},
+  volume  = {94},
+  year    = {2005},
 }
 
-% Bound entanglement as a metrological resource; further motivation for studying bound entangled states.
+% Bound entanglement, private states, and data hiding; operational motivation.
+@article{Christandl_2017,
+  author  = {Christandl, Matthias and Ferrara, Roberto},
+  title   = {Private states, quantum data hiding, and the swapping of perfect secrecy},
+  journal = {Phys. Rev. Lett.},
+  volume  = {119},
+  year    = {2017},
+}
+
+% Bound entanglement as a metrological resource.
 @article{Pal_2021,
-   author={Pál, Károly F. and Tóth, Géza and Bene, Erika and Vértesi, Tamás},
-   title={Bound entangled singlet-like states for quantum metrology},
-   journal={Physical Review Research},
-   volume={3},
-   pages={023101},
-   year={2021},
-   doi={10.1103/PhysRevResearch.3.023101},
+  author  = {P{\'a}l, K{\'a}roly F. and T{\'o}th, G{\'e}za and Bene, Erika and V{\'e}rtesi, Tam{\'a}s},
+  title   = {Bound entangled singlet-like states for quantum metrology},
+  journal = {Phys. Rev. Res.},
+  volume  = {3},
+  year    = {2021},
 }
 
-% Criterion for indecomposability of positive maps; relevant to whether our witnesses are non-decomposable.
-@article{Hall_2006,
-   author={Hall, William},
-   title={A new criterion for indecomposability of positive maps},
-   journal={Journal of Physics A: Mathematical and General},
-   volume={39},
-   pages={14119},
-   year={2006},
-   doi={10.1088/0305-4470/39/45/020},
+% ---------------------------------------------------------------------------
+% Entanglement witnesses
+% ---------------------------------------------------------------------------
+
+% Optimization of entanglement witnesses; decomposability and optimality.
+@article{Lewenstein_2000,
+  author  = {Lewenstein, Maciej and Kraus, Barbara and Cirac, J. Ignacio and Horodecki, Pawe{\l}},
+  title   = {Optimization of entanglement witnesses},
+  journal = {Phys. Rev. A},
+  volume  = {62},
+  year    = {2000},
 }
 
-% Mutually-unbiased-bases detection of bound entanglement; an alternative detection approach.
-@article{Bae_2023,
-   author={Bae, Joonwoo and Bera, Anindita and Chruściński, Dariusz and Hiesmayr, Beatrix C. and McNulty, Daniel},
-   title={How many mutually unbiased bases are needed to detect bound entangled states?},
-   journal={Journal of Physics A: Mathematical and Theoretical},
-   volume={56},
-   year={2023},
-   doi={10.1088/1751-8121/acaa16},
+% Construction of indecomposable witnesses, needed to detect PPT entanglement.
+@article{Chruscinski_2008,
+  author  = {Chru{\'s}ci{\'n}ski, Dariusz and Kossakowski, Andrzej},
+  title   = {How to construct indecomposable entanglement witnesses},
+  journal = {J. Phys. A: Math. Theor.},
+  volume  = {41},
+  year    = {2008},
 }
 
-% Positivity and entanglement over real Hilbert spaces; directly supports the real-vs-complex open question.
-@article{Chiribella_2023,
-   author={Chiribella, Giulio and Davidson, Kenneth R. and Paulsen, Vern I. and Rahaman, Mizanur},
-   title={Positive Maps and Entanglement in Real Hilbert Spaces},
-   journal={Annales Henri Poincaré},
-   volume={24},
-   year={2023},
-   doi={10.1007/s00023-023-01325-x},
+% Constructing optimal entanglement witnesses.
+@article{Chruscinski_2009,
+  author  = {Chru{\'s}ci{\'n}ski, Dariusz and Pytel, Justyna and Sarbicki, Gniewomir},
+  title   = {Constructing optimal entanglement witnesses},
+  journal = {Phys. Rev. A},
+  volume  = {80},
+  year    = {2009},
 }
 
-% Indecomposable witnesses from symmetric measurements; related witness-construction technique.
-@article{Siudzinska_2022,
-   author={Siudzińska, Katarzyna},
-   title={Indecomposability of entanglement witnesses constructed from symmetric measurements},
-   journal={Scientific Reports},
-   volume={12},
-   pages={10661},
-   year={2022},
-   doi={10.1038/s41598-022-14920-5},
-}
-
-% Early SDP formulation of entanglement-witness search (DPS precursor).
-@inproceedings{Parrilo_2002,
-   author={Doherty, Andrew C. and Parrilo, Pablo A. and Spedalieri, Federico M.},
-   title={Entanglement witnesses and semidefinite programming},
-   booktitle={Proceedings of the 41st IEEE Conference on Decision and Control (CDC)},
-   year={2002},
-}
-
-% Related computational master's thesis on PPT (bound) entanglement in three-qubit systems.
-@mastersthesis{Satola_2025,
-   author={Satola, Saku},
-   title={PPT entanglement and entanglement harvesting with three qubits},
-   school={University of Helsinki},
-   year={2025},
-}
-
-% Lecture notes on quantum channels; background reference for channels and the Choi formalism.
-@misc{Leditzky_2023,
-   author={Leditzky, Felix},
-   title={Math 595: Quantum Channels (lecture notes)},
-   year={2023},
-   url={https://felixleditzky.info/teaching/ST23/},
-}
-
-% tightness, optimality, and extremality of witnesses; cited for the geometric characterisation of witness detection power.
+% Survey of witness construction, analysis, and classification; tightness and optimality.
 @article{Chruscinski_2014,
-   author={Chruściński, Dariusz and Sarbicki, Gniewomir},
-   title={Entanglement witnesses: construction, analysis and classification},
-   journal={Journal of Physics A: Mathematical and Theoretical},
-   year={2014},
+  author  = {Chru{\'s}ci{\'n}ski, Dariusz and Sarbicki, Gniewomir},
+  title   = {Entanglement witnesses: construction, analysis and classification},
+  journal = {J. Phys. A: Math. Theor.},
+  volume  = {47},
+  year    = {2014},
 }
 
-@article{Peyrl_2008,
-   author = {Helfried Peyrl and Pablo A. Parrilo},
-   title = {Computing sum of squares decompositions with rational coefficients},
-   journal = {Theoretical Computer Science},
-   year = {2008},
+% Criterion for indecomposability of positive maps.
+@article{Hall_2006,
+  author  = {Hall, William},
+  title   = {A new criterion for indecomposability of positive maps},
+  journal = {J. Phys. A: Math. Gen.},
+  volume  = {39},
+  year    = {2006},
 }
 
-@article{Zyczkowski_2011,
-   author={Życzkowski, Karol and Penson, Karol A. and Nechita, Ion and Collins, Benoît},
-   title={Generating random density matrices},
-   journal={Journal of Mathematical Physics},
-   year={2011},
+% Indecomposable witnesses from symmetric measurements; recent witness construction.
+@article{Siudzinska_2022,
+  author  = {Siudzi{\'n}ska, Katarzyna},
+  title   = {Indecomposability of entanglement witnesses constructed from symmetric measurements},
+  journal = {Sci. Rep.},
+  volume  = {12},
+  year    = {2022},
 }
 
-@article{Luo_1998,
-   author = {Luo, Zhi-Quan and Sturm, Jos F. and Zhang, Shuzhong},
-   title = {Superlinear Convergence of a Symmetric Primal-Dual Path Following Algorithm for Semidefinite Programming},
-   journal = {SIAM Journal on Optimization},
-   year = {1998},
+% Detecting bound entanglement with mutually unbiased bases.
+@article{Bae_2023,
+  author  = {Bae, Joonwoo and Bera, Anindita and Chru{\'s}ci{\'n}ski, Dariusz and Hiesmayr, Beatrix C. and McNulty, Daniel},
+  title   = {How many mutually unbiased bases are needed to detect bound entangled states?},
+  journal = {J. Phys. A: Math. Theor.},
+  volume  = {56},
+  year    = {2023},
 }
 
-@article{Cafuta_2015,
-   author = {Cafuta, Kristijan and Klep, Igor and Povh, Janez},
-   title = {Rational sums of hermitian squares of free noncommutative polynomials},
-   journal = {Ars Mathematica Contemporanea},
-   year = {2015},
+% Witness class with a realignment-like (CCNR) criterion.
+@article{Jannesary_2023,
+  author        = {Jannesary, Vahid and Karimipour, Vahid and Chru{\'s}ci{\'n}ski, Dariusz},
+  title         = {A class of entanglement witnesses and a realignment-like criterion},
+  journal       = {arXiv:2308.07019 [quant-ph]},
+  year          = {2023},
 }
 
+% Rank-based detection of bound entanglement; a recent alternative detection strategy.
+@article{Gulati_2025,
+  author  = {Gulati, Aabhas},
+  title   = {Rank-based entanglement detection for bound entangled states},
+  journal = {Phys. Rev. A},
+  volume  = {113},
+  year    = {2026},
+}
+
+% Entanglement detection via witness search and global optimization; see-saw precursor.
+@article{IoannouTravaglione_2006,
+  author  = {Ioannou, Lawrence M. and Travaglione, Benjamin C.},
+  title   = {Quantum separability and entanglement detection via entanglement-witness search and global optimization},
+  journal = {Phys. Rev. A},
+  volume  = {73},
+  year    = {2006},
+}
+
+% ---------------------------------------------------------------------------
+% Complexity and semidefinite programming
+% ---------------------------------------------------------------------------
+
+% NP-hardness of separability testing.
+@article{Gharibian_2009,
+  author  = {Gharibian, Sevag},
+  title   = {Strong {NP}-hardness of the quantum separability problem},
+  journal = {Quantum Inf. Comput.},
+  volume  = {10},
+  year    = {2010},
+}
+
+% Computational-complexity treatment of the separability problem.
+@article{Ioannou_2006,
+  author  = {Ioannou, Lawrence M.},
+  title   = {Computational complexity of the quantum separability problem},
+  journal = {Quantum Inf. Comput.},
+  volume  = {7},
+  year    = {2007},
+}
+
+% Standard SDP reference: primal/dual form, interior-point complexity.
+@article{Vandenberghe_1996,
+  author  = {Vandenberghe, Lieven and Boyd, Stephen},
+  title   = {Semidefinite programming},
+  journal = {SIAM Rev.},
+  volume  = {38},
+  year    = {1996},
+}
+
+% NP-hardness of deciding nonnegativity of (quartic) polynomials.
+@article{Murty_1987,
+  author  = {Murty, Katta G. and Kabadi, Santosh N.},
+  title   = {Some {NP}-complete problems in quadratic and nonlinear programming},
+  journal = {Math. Program.},
+  volume  = {39},
+  year    = {1987},
+}
+
+% Uniform denominators in Hilbert's 17th problem; SOS multiplier relaxations.
 @article{Reznick_1995,
-   author = {Bruce Reznick},
-   title = {Uniform denominators in Hilbert's 17th problem},
-   journal = {Math. Z.},
-   volume = {220},
-   pages = {75--98},
-   year = {1995},
+  author  = {Reznick, Bruce},
+  title   = {Uniform denominators in {Hilbert}'s seventeenth problem},
+  journal = {Math. Z.},
+  volume  = {220},
+  year    = {1995},
+}
+
+% Rational SOS certificates by rounding and projecting floating-point Gram matrices.
+@article{Peyrl_2008,
+  author  = {Peyrl, Helfried and Parrilo, Pablo A.},
+  title   = {Computing sum of squares decompositions with rational coefficients},
+  journal = {Theor. Comput. Sci.},
+  volume  = {409},
+  year    = {2008},
+}
+
+% Rational certificates for noncommutative SOS; complements the rationalization step.
+@article{Cafuta_2015,
+  author  = {Cafuta, Kristijan and Klep, Igor and Povh, Janez},
+  title   = {Rational sums of hermitian squares of free noncommutative polynomials},
+  journal = {Ars Math. Contemp.},
+  volume  = {9},
+  year    = {2015},
+}
+
+% The SDP solver used for all our semidefinite programs.
+@misc{MOSEK,
+  author = {{MOSEK ApS}},
+  title  = {The {MOSEK} optimization toolbox},
+  year   = {2024},
+  url    = {https://www.mosek.com},
+}
+
+% ---------------------------------------------------------------------------
+% Separability hierarchies
+% ---------------------------------------------------------------------------
+
+% SDP precursor of the DPS hierarchy.
+@article{Doherty_2002,
+  author  = {Doherty, Andrew C. and Parrilo, Pablo A. and Spedalieri, Federico M.},
+  title   = {Distinguishing separable and entangled states},
+  journal = {Phys. Rev. Lett.},
+  volume  = {88},
+  year    = {2002},
+}
+
+% Defines the DPS hierarchy of separability relaxations: our baseline detection method.
+@article{Doherty_2004,
+  author  = {Doherty, Andrew C. and Parrilo, Pablo A. and Spedalieri, Federico M.},
+  title   = {Complete family of separability criteria},
+  journal = {Phys. Rev. A},
+  volume  = {69},
+  year    = {2004},
+}
+
+% Improved DPS hierarchy with KKT constraints giving finite convergence.
+@article{Harrow_2017,
+  author  = {Harrow, Aram W. and Natarajan, Anand and Wu, Xiaodi},
+  title   = {An improved semidefinite programming hierarchy for testing entanglement},
+  journal = {Commun. Math. Phys.},
+  volume  = {352},
+  year    = {2017},
+}
+
+% Specialized SDP hierarchy for diagonal-unitary-invariant states.
+@article{Britz_2025,
+  author        = {Britz, Jonas and Laurent, Monique},
+  title         = {Semidefinite hierarchies for diagonal unitary invariant bipartite quantum states},
+  journal       = {arXiv:2512.06551 [quant-ph]},
+  year          = {2025},
+}
+
+% ---------------------------------------------------------------------------
+% PNCP maps, non-negative polynomials, and the SOS route to witnesses
+% ---------------------------------------------------------------------------
+
+% Positive-map / non-negative-polynomial correspondence and the KMSZ construction.
+@article{Klep_2017,
+  author  = {Klep, Igor and McCullough, Scott and {\v S}ivic, Klemen and Zalar, Alja{\v z}},
+  title   = {There are many more positive maps than completely positive maps},
+  journal = {Int. Math. Res. Not.},
+  year    = {2019},
+}
+
+% SOS hierarchy on the sphere; CSOS/RSOS background for the witness-construction route.
+@article{Fang_2020,
+  author  = {Fang, Kun and Fawzi, Hamza},
+  title   = {The sum-of-squares hierarchy on the sphere and applications in quantum information theory},
+  journal = {Math. Program.},
+  volume  = {190},
+  year    = {2021},
+}
+
+% The PnCP MATLAB toolbox: the prototype implementation of the KMSZ construction
+% (preprint: "Practical construction of positive maps which are not completely
+% positive", arXiv:2001.01181).
+@article{Bhardwaj_2023,
+  author  = {Bhardwaj, Abhishek},
+  title   = {A practical approach to {SOS} relaxations for detecting quantum entanglement},
+  journal = {J. Optim. Theory Appl.},
+  volume  = {198},
+  year    = {2023},
+}
+
+% Theoretical underpinning of the non-negative-polynomial / SOS / moment-problem machinery.
+@phdthesis{Bhardwaj_2020,
+  author = {Bhardwaj, Abhishek},
+  title  = {Non-negative polynomials, sums of squares and the moment problem},
+  school = {Australian National University},
+  year   = {2020},
+}
+
+% Independent, contemporaneous work using the same KMSZ construction for entanglement
+% detection (not for the PPT2 conjecture). Cited for the indecomposability,
+% complexification, and optimal/tight/extremal characterisation of the generated
+% witnesses. Our implementation and PPT2 search were developed independently.
+@article{Masse_2026,
+  author        = {Mass{\'e}, Ga{\"e}l and Rezig, Mounir and Catala, Paul and Scheiner, Santiago and Serradesanferm C{\'o}rdoba, Laia and Oudot, Enky and Markham, Damian},
+  title         = {Detecting bipartite entanglement with {PnCP} maps and non-negative polynomials},
+  journal       = {arXiv:2605.30426 [quant-ph]},
+  year          = {2026},
+}
+
+% ---------------------------------------------------------------------------
+% Bound entangled state constructions and random states
+% ---------------------------------------------------------------------------
+
+% Generating random density matrices; the Wishart ensemble we sample from.
+@article{Zyczkowski_2011,
+  author  = {{\.Z}yczkowski, Karol and Penson, Karol A. and Nechita, Ion and Collins, Beno{\^i}t},
+  title   = {Generating random density matrices},
+  journal = {J. Math. Phys.},
+  volume  = {52},
+  year    = {2011},
+}
+
+% Antisymmetric-subspace bound entangled states; an alternative structured construction.
+@article{Sindici_2018,
+  author  = {Sindici, Enrico and Piani, Marco},
+  title   = {Simple class of bound entangled states based on the properties of the antisymmetric subspace},
+  journal = {Phys. Rev. A},
+  volume  = {97},
+  year    = {2018},
+}
+
+% Bound entanglement in symmetric random induced states; a recent random candidate source.
+@article{Louvet_2025,
+  author  = {Louvet, Jonathan and Damanet, Fran{\c c}ois and Bastin, Thierry},
+  title   = {Bound entanglement in symmetric random induced states},
+  journal = {Phys. Rev. A},
+  volume  = {113},
+  year    = {2026},
+}
+
+% Searching for extremal PPT entangled states; structured candidate generation.
+@article{Augusiak_2010,
+  author  = {Augusiak, Remigiusz and Grabowski, Janusz and Ku{\'s}, Marek and Lewenstein, Maciej},
+  title   = {Searching for extremal {PPT} entangled states},
+  journal = {Opt. Commun.},
+  volume  = {283},
+  year    = {2010},
+}
+
+% Extremal bound entangled states; structured candidate generation.
+@article{Badziag_2014,
+  author  = {Badzi{\k a}g, Pawe{\l} and Horodecki, Karol and Horodecki, Micha{\l} and Jenkinson, Justin and Szarek, Stanis{\l}aw J.},
+  title   = {Bound entangled states with extremal properties},
+  journal = {Phys. Rev. A},
+  volume  = {90},
+  year    = {2014},
+}
+
+% Positivity and entanglement over real Hilbert spaces; the real-vs-complex question.
+@article{Chiribella_2023,
+  author  = {Chiribella, Giulio and Davidson, Kenneth R. and Paulsen, Vern I. and Rahaman, Mizanur},
+  title   = {Positive maps and entanglement in real {Hilbert} spaces},
+  journal = {Ann. Henri Poincar{\'e}},
+  volume  = {24},
+  year    = {2023},
 }
