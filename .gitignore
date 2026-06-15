@@ -2,12 +2,12 @@
 .vscode
 
 # Data
-data/*.mat
-tested_*.csv
+*.mat
+*.csv
+*.jld2
 
 # Julia
 Manifest*.toml
-*.jld2
 
 # Misc
 dev

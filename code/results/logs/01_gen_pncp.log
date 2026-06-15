@@ -1,0 +1,29 @@
+Batches:  52%|█████████████████████▉                    |  ETA: 0:01:37[KBatches:  54%|██████████████████████▋                   |  ETA: 0:02:49[KBatches:  56%|███████████████████████▌                  |  ETA: 0:03:51[KBatches:  58%|████████████████████████▍                 |  ETA: 0:04:42[KBatches:  60%|█████████████████████████▎                |  ETA: 0:05:23[KBatches:  62%|██████████████████████████                |  ETA: 0:05:53[KBatches:  64%|██████████████████████████▉               |  ETA: 0:06:18[KBatches:  66%|███████████████████████████▊              |  ETA: 0:06:31[KBatches:  68%|████████████████████████████▌             |  ETA: 0:06:40[KBatches:  70%|█████████████████████████████▍            |  ETA: 0:06:46[KBatches:  72%|██████████████████████████████▎           |  ETA: 0:06:43[KBatches:  74%|███████████████████████████████▏          |  ETA: 0:06:37[KBatches:  76%|███████████████████████████████▉          |  ETA: 0:06:25[KBatches:  78%|████████████████████████████████▊         |  ETA: 0:06:08[KBatches:  80%|█████████████████████████████████▋        |  ETA: 0:05:49[KBatches:  82%|██████████████████████████████████▌       |  ETA: 0:05:26[KBatches:  84%|███████████████████████████████████▎      |  ETA: 0:05:00[KBatches:  86%|████████████████████████████████████▏     |  ETA: 0:04:32[KBatches:  88%|█████████████████████████████████████     |  ETA: 0:04:00[KBatches:  90%|█████████████████████████████████████▊    |  ETA: 0:03:26[KBatches:  92%|██████████████████████████████████████▋   |  ETA: 0:02:50[KBatches:  94%|███████████████████████████████████████▌  |  ETA: 0:02:11[KBatches:  96%|████████████████████████████████████████▍ |  ETA: 0:01:29[KBatches:  98%|█████████████████████████████████████████▏|  ETA: 0:00:46[KBatches: 100%|██████████████████████████████████████████| Time: 0:38:55[K
+Resuming: 25/50 batches complete, 5000/5000 accepted (100.0%)
+Generating on 40 threads: target 10000 PnCP maps, 200 per batch, output results/final_seed42/pncp_4x4.jld2
+Saved batch 26/50: 200/200 accepted (100.0%). Running total: 5200/5200 (100.0%).
+Saved batch 27/50: 200/200 accepted (100.0%). Running total: 5400/5400 (100.0%).
+Saved batch 28/50: 200/200 accepted (100.0%). Running total: 5600/5600 (100.0%).
+Saved batch 29/50: 200/200 accepted (100.0%). Running total: 5800/5800 (100.0%).
+Saved batch 30/50: 200/200 accepted (100.0%). Running total: 6000/6000 (100.0%).
+Saved batch 31/50: 200/200 accepted (100.0%). Running total: 6200/6200 (100.0%).
+Saved batch 32/50: 200/200 accepted (100.0%). Running total: 6400/6400 (100.0%).
+Saved batch 33/50: 200/200 accepted (100.0%). Running total: 6600/6600 (100.0%).
+Saved batch 34/50: 200/200 accepted (100.0%). Running total: 6800/6800 (100.0%).
+Saved batch 35/50: 200/200 accepted (100.0%). Running total: 7000/7000 (100.0%).
+Saved batch 36/50: 200/200 accepted (100.0%). Running total: 7200/7200 (100.0%).
+Saved batch 37/50: 200/200 accepted (100.0%). Running total: 7400/7400 (100.0%).
+Saved batch 38/50: 200/200 accepted (100.0%). Running total: 7600/7600 (100.0%).
+Saved batch 39/50: 200/200 accepted (100.0%). Running total: 7800/7800 (100.0%).
+Saved batch 40/50: 200/200 accepted (100.0%). Running total: 8000/8000 (100.0%).
+Saved batch 41/50: 200/200 accepted (100.0%). Running total: 8200/8200 (100.0%).
+Saved batch 42/50: 200/200 accepted (100.0%). Running total: 8400/8400 (100.0%).
+Saved batch 43/50: 200/200 accepted (100.0%). Running total: 8600/8600 (100.0%).
+Saved batch 44/50: 200/200 accepted (100.0%). Running total: 8800/8800 (100.0%).
+Saved batch 45/50: 200/200 accepted (100.0%). Running total: 9000/9000 (100.0%).
+Saved batch 46/50: 200/200 accepted (100.0%). Running total: 9200/9200 (100.0%).
+Saved batch 47/50: 200/200 accepted (100.0%). Running total: 9400/9400 (100.0%).
+Saved batch 48/50: 200/200 accepted (100.0%). Running total: 9600/9600 (100.0%).
+Saved batch 49/50: 200/200 accepted (100.0%). Running total: 9800/9800 (100.0%).
+Saved batch 50/50: 200/200 accepted (100.0%). Running total: 10000/10000 (100.0%).
+Done. Accepted 10000/10000 (100.0%).

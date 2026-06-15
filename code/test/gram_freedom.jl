@@ -10,7 +10,7 @@ using ppt2
 # forms on real product vectors (their defining property), and that the basis
 # of `L` has the expected size, is independent, and indeed vanishes on products.
 @testset "gram_freedom: representation freedom" begin
-    rng = MersenneTwister(7)
+    rng = Xoshiro()
     for (n, m) in ((2, 2), (2, 3), (3, 3), (3, 4))
         d = n * m
         B = gram_freedom(n, m)

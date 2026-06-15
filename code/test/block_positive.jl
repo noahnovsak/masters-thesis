@@ -11,7 +11,7 @@ using ppt2
 # witness condition — can be destroyed). This is exactly why isolating the valid
 # representatives `Mλ` is a real problem and `field=:real` cannot do it.
 @testset "is_block_positive" begin
-    rng = MersenneTwister(11)
+    rng = Xoshiro()
 
     for (n, m) in ((2, 2), (2, 3), (3, 3))
         d = n * m

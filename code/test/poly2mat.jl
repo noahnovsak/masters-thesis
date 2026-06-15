@@ -10,7 +10,7 @@ using ppt2
 #
 # for every numeric x ∈ ℝⁿ, y ∈ ℝᵐ.  The matrix must also be symmetric.
 @testset "poly2mat conversion" begin
-    rng = MersenneTwister(42)
+    rng = Xoshiro()
     for (n, m) in ((2, 2), (2, 3), (3, 3), (3, 4))
         d = n * m
         c = randn(rng, d^2)

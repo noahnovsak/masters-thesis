@@ -7,7 +7,7 @@ issym(A; atol=1e-9) = isapprox(A, A'; atol=atol)
 ispsd(A; tol=1e-8) = eigmin(Hermitian(Matrix(A))) ≥ -tol
 
 @testset "rand_psd" begin
-    rng = MersenneTwister(1)
+    rng = Xoshiro()
     for (n, m) in ((2, 2), (2, 3), (3, 3))
         d = n * m
         M = rand_psd(n, m; rng=rng)
@@ -25,7 +25,7 @@ ispsd(A; tol=1e-8) = eigmin(Hermitian(Matrix(A))) ≥ -tol
 end
 
 @testset "rand_sep is PSD and PPT" begin
-    rng = MersenneTwister(2)
+    rng = Xoshiro()
     for (n, m) in ((2, 2), (2, 3), (3, 2), (3, 3))
         ρ = rand_sep(n, m; n_terms=3, rng=rng)
         @test size(ρ) == (n * m, n * m)
@@ -36,7 +36,7 @@ end
 end
 
 @testset "rand_ppt is PSD and PPT" begin
-    rng = MersenneTwister(3)
+    rng = Xoshiro()
     for (n, m) in ((2, 2), (2, 3), (3, 3), (3, 4))
         ρ = rand_ppt(n, m; rng=rng)
         @test size(ρ) == (n * m, n * m)
@@ -51,7 +51,7 @@ end
 
 @testset "rand_ppt is reproducible" begin
     for (n, m) in ((2, 2), (3, 4))
-        @test rand_ppt(n, m; rng=MersenneTwister(7)) == rand_ppt(n, m; rng=MersenneTwister(7))
+        @test rand_ppt(n, m; rng=Xoshiro(1)) == rand_ppt(n, m; rng=Xoshiro(1))
     end
 end
 
@@ -66,7 +66,7 @@ end
 end
 
 @testset "min_eig / has_negative_eig vs eigvals" begin
-    rng = MersenneTwister(11)
+    rng = Xoshiro()
     for _ in 1:20
         d = rand(rng, 2:8)
         S = randn(rng, d, d); H = Symmetric(S + S')                 # real symmetric
