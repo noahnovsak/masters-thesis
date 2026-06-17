@@ -9,9 +9,7 @@
 // main.typ. The book-style `book.typ` is kept for reference.
 
 #import "@preview/drafting:0.2.2": *
-#import "@preview/algorithmic:1.0.7"
-#import "@preview/cheq:0.3.0": checklist
-#import algorithmic: *
+#import "@preview/algorithmic:1.0.7": *
 #import "@preview/lemmify:0.1.8": *
 
 // --- Colors lifted from friteza.cls / pnasresearcharticle.sty ---
@@ -53,6 +51,16 @@
 
 // Keywords are stored comma-separated; the template shows them pipe-separated.
 #let fmt-keywords(kw) = kw.split(", ").join(" | ")
+
+// Bibliography renderer (called from main.typ): two-column PNAS layout.
+// Path is relative to this file, so the .bib sits one directory up.
+#let render-bib(path: "../bibliography.bib") = {
+  linebreak()
+  columns(2, {
+    heading(level: 1, numbering: none)[Bibliography]
+    bibliography(title: none, style: "pnas.csl", path)
+  })
+}
 
 #let conf(
   title_en: "",
@@ -167,9 +175,6 @@
     let el = it.element
     if el == none {
       it
-    } else if el.func() == heading {
-      let num = numbering(el.numbering, ..counter(heading).at(el.location()))
-      link(el.location())[#num]
     } else if el.func() == math.equation {
       let num = numbering(el.numbering, ..counter(math.equation).at(el.location()))
       link(el.location())[#num]
@@ -206,7 +211,7 @@
     #if cosupervisor != none [*Co-supervisor:* #cosupervisor \ ]
     #v(8pt)
     #text(size: sf(7pt))[
-      *Copyright:* This work is licensed under a CC-BY-4.0 license.
+      *Copyright:* This work is licensed under a CC BY-SA 4.0 license.
       #if code_url != none [ The software and results produced in this work are released under GPL-3.0-or-later at #link(code_url).]
     ]
   ]
@@ -214,7 +219,7 @@
   // ============================ FIRST-PAGE SIDEBAR ============================
   // Logo at the very top of the wide left margin; hangs slightly further out
   // than the text sidebar.
-  place(top + left, dx: -194pt, image("UL-FRI.png", width: 84pt))
+  place(top + left, dx: -194pt, image("figures/UL-FRI.png", width: 84pt))
 
   // Slovene title/abstract/keywords, plain, aligned to the page bottom.
   place(bottom + left, dx: -gutter-shift, dy: 0mm, block(width: gutter-width)[

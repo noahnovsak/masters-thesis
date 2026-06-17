@@ -10,6 +10,13 @@
   max-reset-level: 1,
 )
 
+// Bibliography renderer (called from main.typ): single-column, chapter-style.
+// Path is relative to this file, so the .bib sits one directory up.
+#let render-bib(path: "../bibliography.bib") = {
+  heading(level: 1)[Bibliography]
+  bibliography(title: none, style: "pnas.csl", path)
+}
+
 #let conf(
   title_en: "",
   title_sl: "",
@@ -36,10 +43,10 @@
   )
 
   // Headings in Helvetica/Arial, body in a Times-like serif, ~1.3 line spacing.
-  set text(font: "New Computer Modern", size: 12pt, lang: "en")
+  set text(font: "Latin Modern Roman", size: 12pt, lang: "en")
   set par(leading: 0.8em, justify: true, linebreaks: "optimized")
 
-  show heading: set text(font: "Helvetica", weight: "bold")
+  show heading: set text(font: "Latin Modern Roman", weight: "bold")
   show heading.where(level: 1): it => {
     pagebreak(weak: true, to: "odd") // Chapters begin on odd pages.
     v(2em)
@@ -49,13 +56,13 @@
   set heading(numbering: "1.1")
 
   set math.equation(numbering: "(1)")
-  show math.equation: set text(font: "New Computer Modern Math")
+  show math.equation: set text(font: "Latin Modern Math")
 
-  show raw: set text(size: 12pt, font: "New Computer Modern Mono")
+  show raw: set text(size: 12pt, font: "Latin Modern Mono")
 
   show link: it => {
   if type(it.dest) == str {
-    set text(font: "New Computer Modern Mono")
+    set text(font: "Latin Modern Mono")
     it
   } else {
     it
@@ -66,9 +73,6 @@
     let el = it.element
     if el == none {
       it
-    } else if el.func() == heading {
-      let num = counter(heading).at(el.location())
-      [#num.at(0) #el.body]
     } else if el.func() == math.equation {
       let num = numbering(el.numbering, ..counter(math.equation).at(el.location()))
       link(el.location())[#num]
