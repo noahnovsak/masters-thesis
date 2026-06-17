@@ -1,4 +1,4 @@
-#import "template/paper.typ": *
+#import "template/book.typ": *
 
 #show: style-algorithm
 #show: thm-rules
@@ -345,7 +345,7 @@ Let $G$ be a numerical solution with $mu = min("eig"(G_0)) > 0$ and residual $ep
 With a rational gram matrix $hat(G)$ in hand, the coefficients of $hat(F_delta)$ can be isolated using exact computations.
 
 = Methods <methods>
-This section defines the computational workflow used in the current implementation. The goal is reproducibility with mathematical traceability. Each computational step corresponds to a defined object or operation from the preceding section.
+This section defines the computational workflow used in the current implementation. The goal is reproducibility with mathematical traceability. Each computational step corresponds to a defined object or operation from the preceding section. All of the code, command-line drivers, generated datasets, and experiments described in this thesis are openly available in the accompanying repository at #link("https://github.com/noahnovsak/masters-thesis") (a Julia package released under GPL-3.0-or-later); the implementation notes below point into it directly, and the Appendix follows a single generated witness from construction through both tests of the conjecture as a concrete illustration.
 
 A note on normalization is in order. A quantum state is conventionally a PSD operator with unit trace, and a quantum channel is trace preserving. The tests in this thesis are, however, positivity and sign based. Detecting entanglement amounts to checking the sign of a partial transpose, a witness expectation, or an SOS margin, none of which depend on the magnitude of the trace. We therefore work throughout with unnormalized operators, and normalize only when necessary. This avoids redundant rescaling in the inner loops without affecting any conclusion.
 
@@ -430,7 +430,7 @@ A negative optimum here would exhibit a PPT entangled composition, i.e. a PPT2 c
 As a by-product we explored the representation freedom of @gram-freedom. Each witness can be expanded into a family of Gram representatives $M_0 + sum_alpha lambda_alpha N_alpha$ over a basis ${N_alpha}$ of $L$. We do not, in the end, rely on this. The relations spanning $L$ vanish on _real_ product vectors only, so an asymmetric representative stays block positive over $RR$ but need not remain so over $CC$. Guaranteeing such behavior is to our knowledge also an NP-hard problem without a simple solution in sight. The canonical, IPT representative, annihilating the skew-symmetric part as previously proposed remains the preferred approach for our search, together with generic, non-symmetrized candidates. We leave a principled complex-domain extension to future work.
 
 == Implementation Architecture
-The implementation is a small Julia package in the `code/` directory. The core logic lives in the `ppt2` module (`code/src/ppt2.jl`), with the PNCP construction split into `code/src/pncp.jl` and included into the same module. Together they map one-to-one onto the operations defined above:
+The implementation is a small Julia package in the `code/` directory of the repository linked above. The core logic lives in the `ppt2` module (`code/src/ppt2.jl`), with the PNCP construction split into `code/src/pncp.jl` and included into the same module. Together they map one-to-one onto the operations defined above:
 
 #table(
   columns: (auto, auto),
@@ -455,7 +455,7 @@ The package leans on the established Julia optimization and quantum-information 
 Several command-line drivers in `code/scripts/` orchestrate the long-running jobs, all sharing a `common.jl` harness that provides resumable, reproducible, multithreaded batch generation: completed batches are detected and skipped on a rerun, and every candidate is seeded deterministically so a configuration yields the same dataset regardless of thread count. The generation drivers build the library and the candidate pools: `gen_pncp.jl` constructs the PNCP witness library; `gen_witness_ppt.jl` produces, for each witness, the bound entangled state the witness-restricted SDP extracts from the full PPT cone; and `compare_detection.jl` samples a random bound entangled pool -- generic or, with `--ppt-invariant`, symmetry-restricted -- while recording every criterion's score on each state, so the detectors can be compared directly (a lighter `gen_ppt.jl` produces such a pool without the scores). `test_ppt2.jl` runs the threaded all-pairs composition search of @pipeline, logging any detection together with the offending state and witness; `gen_witness_ppt2.jl` runs the see-saw that sharpens the witness-restricted SDP from the whole PPT cone down to the composition manifold; and `cross_trace.jl` and `cross_ampl.jl` measure how broadly each witness reaches beyond its own state. The `code/test/` suite checks the construction against reference values and verifies that generated maps are positive on large random samples, and the `code/notebooks/` directory documents the rationalization, PPT-state, and UPB workflows interactively.
 
 = Results <results>
-This section reports the final $4 times 4$ scan, the smallest dimension in which the PPT2 conjecture is open. It runs along three threads. First, the PNCP witness library: generating these provably indecomposable witnesses quickly and in bulk is a result in its own right, and the engine behind everything that follows. Second, candidate generation: to look for a counterexample for the PPT2 conjecture we compare three ways of producing PPT states capable of producing a composite channel. Third, the conjecture itself, attacked two independent ways: by testing the compositions of our candidates, and by a see-saw SDP that moves from a completely random search to something more _optimized_. Every stage was run once under a single fixed seed, at DPS level 2 and tolerance $10^(-8)$, so the dataset is reproducible. The headline is a uniform negative: no composition of two PPT maps was ever found entangled, leaving the conjecture without a counterexample.
+This section reports the final $4 times 4$ scan, the smallest dimension in which the PPT2 conjecture is open. It runs along three threads. First, the PNCP witness library: generating these provably indecomposable witnesses quickly and in bulk is a result in its own right, and the engine behind everything that follows. Second, candidate generation: to look for a counterexample for the PPT2 conjecture we compare three ways of producing PPT states capable of producing a composite channel. Third, the conjecture itself, attacked two independent ways: by testing the compositions of our candidates, and by a see-saw SDP that moves from a completely random search to something more _optimized_. Every stage was run once under a single fixed seed, at DPS level 2 and tolerance $10^(-8)$, so the dataset is reproducible. The full datasets and run logs are archived in the repository under `code/results/`, and the Appendix follows one generated witness from its polynomial through both tests, with the concrete matrices. The headline is a uniform negative: no composition of two PPT maps was ever found entangled, leaving the conjecture without a counterexample.
 
 == The PnCP witness library <pncp-library>
 The pipeline opens by building a library of PNCP witnesses with the KMSZ construction, and being able to do so cheaply is the observation that set this work in motion. We generated 10,000 witnesses in less than an hour, every construction yielding a valid, rationalized certificate.
@@ -558,3 +558,118 @@ Another interesting direction, with regards to finding a counterexample for the 
 
 // Each template owns its bibliography layout (paper: 2-col; book: 1-col).
 #render-bib()
+
+#let appendix(body) = {
+  set heading(numbering: "A.1", supplement: [Appendix])
+  counter(heading).update(0)
+  body
+}
+
+// #set heading(numbering: "A")
+#show: appendix
+
+= Example in #tmath($4 times 4$) <appendix>
+To make the pipeline concrete, we follow a single witness through the entire workflow, from its generation to both tests of the conjecture. Entry number 8172 of the generated library represents the strongest obtained detector. All numbers below are rounded for display; the exact rationalized certificate and the full-precision states are reproducible from the drivers in @methods under the fixed seed and archived in the repository under `code/results/`.
+
+== Generated witness
+The KMSZ construction (@kmsz) returns a real positive but not completely positive map $Phi: S_4 -> S_4$, equivalently the biquadratic form $p_Phi (bold(x), bold(y)) = bold(y)^T Phi(bold(x) bold(x)^T) bold(y)$, a non-negative polynomial on $RR^4 times RR^4$ that is not a sum of squares:
+
+#block(width:100%)[
+  #set text(size: 7pt)
+  #set math.equation(numbering: none)
+  $ p_Phi (bold(x), bold(y)) = & 6.12 x_4^2 y_4^2 - 1.08 x_4^2 y_3 y_4 + 2.51 x_4^2 y_3^2 - 0.28 x_4^2 y_2 y_4 - 3.3 x_4^2 y_2 y_3 + 2.08 x_4^2 y_2^2 + 0.07 x_4^2 y_1 y_4 + 1.95 x_4^2 y_1 y_3 \
+  & - 1.14 x_4^2 y_1 y_2 + 0.84 x_4^2 y_1^2 - 1.9 x_3 x_4 y_4^2 + 0.75 x_3 x_4 y_3 y_4 - 1.18 x_3 x_4 y_3^2 - 5.84 x_3 x_4 y_2 y_4 + 0.28 x_3 x_4 y_2 y_3 \
+  & - 2.34 x_3 x_4 y_2^2 - 2.05 x_3 x_4 y_1 y_4 - 1.07 x_3 x_4 y_1 y_3 - 0.12 x_3 x_4 y_1 y_2 - 2.23 x_3 x_4 y_1^2 + 1.15 x_3^2 y_4^2 + 0.16 x_3^2 y_3 y_4 \
+  & + 0.33 x_3^2 y_3^2 + 1.94 x_3^2 y_2 y_4 + 0.75 x_3^2 y_2 y_3 + 3.1 x_3^2 y_2^2 + 2.84 x_3^2 y_1 y_4 + 0.14 x_3^2 y_1 y_3 + 0.72 x_3^2 y_1 y_2 + 2.19 x_3^2 y_1^2 \
+  & - 4.44 x_2 x_4 y_4^2 + 0.13 x_2 x_4 y_3 y_4 + 1.14 x_2 x_4 y_3^2 + 1.2 x_2 x_4 y_2 y_4 - 0.3 x_2 x_4 y_2 y_3 - 1.41 x_2 x_4 y_2^2 - 6.72 x_2 x_4 y_1 y_4 \
+  & - 0.71 x_2 x_4 y_1 y_3 + 2.19 x_2 x_4 y_1 y_2 - 0.52 x_2 x_4 y_1^2 + 2.71 x_2 x_3 y_4^2 - 1.62 x_2 x_3 y_3 y_4 - 0.21 x_2 x_3 y_3^2 + 4.83 x_2 x_3 y_2 y_4 \
+  & + 0.32 x_2 x_3 y_2 y_3 + 0.41 x_2 x_3 y_2^2 + 2.96 x_2 x_3 y_1 y_4 - 2.6 x_2 x_3 y_1 y_3 + 4.05 x_2 x_3 y_1 y_2 - 0.5 x_2 x_3 y_1^2 + 2.24 x_2^2 y_4^2 \
+  & - 2.04 x_2^2 y_3 y_4 + 1.4 x_2^2 y_3^2 + 0.12 x_2^2 y_2 y_4 - 1.26 x_2^2 y_2 y_3 + 2.5 x_2^2 y_2^2 + 2.89 x_2^2 y_1 y_4 - 0.9 x_2^2 y_1 y_3 - 3.51 x_2^2 y_1 y_2 \
+  & + 3.1 x_2^2 y_1^2 - 7.96 x_1 x_4 y_4^2 + 2.36 x_1 x_4 y_3 y_4 - 4.68 x_1 x_4 y_3^2 - 3.19 x_1 x_4 y_2 y_4 + 3.92 x_1 x_4 y_2 y_3 - 0.8 x_1 x_4 y_2^2 \
+  & - 2.12 x_1 x_4 y_1 y_4 - 5.11 x_1 x_4 y_1 y_3 - 1.39 x_1 x_4 y_1 y_2 - 2.88 x_1 x_4 y_1^2 - 0.05 x_1 x_3 y_4^2 - 0.56 x_1 x_3 y_3 y_4 + 0.96 x_1 x_3 y_3^2 \
+  & + 2.49 x_1 x_3 y_2 y_4 - 2.52 x_1 x_3 y_2 y_3 + 3.94 x_1 x_3 y_2^2 + 2.9 x_1 x_3 y_1 y_4 + 3.25 x_1 x_3 y_1 y_3 + 5.52 x_1 x_3 y_1 y_2 + 3.93 x_1 x_3 y_1^2 \
+  & + 1.95 x_1 x_2 y_4^2 - 2.39 x_1 x_2 y_3 y_4 - 3.53 x_1 x_2 y_3^2 - 2.42 x_1 x_2 y_2 y_4 + 2.53 x_1 x_2 y_2 y_3 + 1.2 x_1 x_2 y_2^2 + 9.73 x_1 x_2 y_1 y_4 \
+  & - 0.55 x_1 x_2 y_1 y_3 + 3.79 x_1 x_2 y_1 y_2 - 0.75 x_1 x_2 y_1^2 + 5.62 x_1^2 y_4^2 + 3.05 x_1^2 y_3 y_4 + 4.56 x_1^2 y_3^2 + 2.53 x_1^2 y_2 y_4 \
+  & - 3.92 x_1^2 y_2 y_3 + 3.54 x_1^2 y_2^2 - 2.29 x_1^2 y_1 y_4 - 0.11 x_1^2 y_1 y_3 + 3.29 x_1^2 y_1 y_2 + 5.9 x_1^2 y_1^2. $
+]
+
+This polynomial is what our construction actually produces. Collecting the product monomials into $bold(v) = bold(x) times.o bold(y) in RR^16$ gives the quadratic representation $p_Phi (bold(x), bold(y)) = bold(v)^T W bold(v)$ of @gram-rep, from which we extract the entanglement witness $C_(Gamma_CC)$ as the trivial complex extension (@complexification) of the gram matrix $W$. As the construction guarantees, $W$ is symmetric, partial-transpose invariant (@complexification), block positive (@complexification), and not PSD, with eigenvalues running from $-2.23$ to $13.6$ (four of them negative).
+
+#block(width:100%)[
+  #set text(size: 7pt)
+  #set math.equation(numbering: none)
+  $ W approx mat(delim: "[",
+  5.9, 1.64, -0.06, -1.15, -0.38, 0.95, -0.14, 2.43, 1.97, 1.38, 0.81, 0.73, -1.44, -0.35, -1.28, -0.53;
+  1.64, 3.54, -1.96, 1.27, 0.95, 0.6, 0.63, -0.61, 1.38, 1.97, -0.63, 0.62, -0.35, -0.4, 0.98, -0.8;
+  -0.06, -1.96, 4.56, 1.52, -0.14, 0.63, -1.77, -0.6, 0.81, -0.63, 0.48, -0.14, -1.28, 0.98, -2.34, 0.59;
+  -1.15, 1.27, 1.52, 5.62, 2.43, -0.61, -0.6, 0.97, 0.73, 0.62, -0.14, -0.02, -0.53, -0.8, 0.59, -3.98;
+  -0.38, 0.95, -0.14, 2.43, 3.1, -1.76, -0.45, 1.45, -0.25, 1.01, -0.65, 0.74, -0.26, 0.55, -0.18, -1.68;
+  0.95, 0.6, 0.63, -0.61, -1.76, 2.5, -0.63, 0.06, 1.01, 0.2, 0.08, 1.21, 0.55, -0.71, -0.08, 0.3;
+  -0.14, 0.63, -1.77, -0.6, -0.45, -0.63, 1.4, -1.02, -0.65, 0.08, -0.11, -0.41, -0.18, -0.08, 0.57, 0.03;
+  2.43, -0.61, -0.6, 0.97, 1.45, 0.06, -1.02, 2.24, 0.74, 1.21, -0.41, 1.35, -1.68, 0.3, 0.03, -2.22;
+  1.97, 1.38, 0.81, 0.73, -0.25, 1.01, -0.65, 0.74, 2.19, 0.36, 0.07, 1.42, -1.11, -0.03, -0.27, -0.51;
+  1.38, 1.97, -0.63, 0.62, 1.01, 0.2, 0.08, 1.21, 0.36, 3.1, 0.37, 0.97, -0.03, -1.17, 0.07, -1.46;
+  0.81, -0.63, 0.48, -0.14, -0.65, 0.08, -0.11, -0.41, 0.07, 0.37, 0.33, 0.08, -0.27, 0.07, -0.59, 0.19;
+  0.73, 0.62, -0.14, -0.02, 0.74, 1.21, -0.41, 1.35, 1.42, 0.97, 0.08, 1.15, -0.51, -1.46, 0.19, -0.95;
+  -1.44, -0.35, -1.28, -0.53, -0.26, 0.55, -0.18, -1.68, -1.11, -0.03, -0.27, -0.51, 0.84, -0.57, 0.97, 0.04;
+  -0.35, -0.4, 0.98, -0.8, 0.55, -0.71, -0.08, 0.3, -0.03, -1.17, 0.07, -1.46, -0.57, 2.08, -1.65, -0.14;
+  -1.28, 0.98, -2.34, 0.59, -0.18, -0.08, 0.57, 0.03, -0.27, 0.07, -0.59, 0.19, 0.97, -1.65, 2.51, -0.54;
+  -0.53, -0.8, 0.59, -3.98, -1.68, 0.3, 0.03, -2.22, -0.51, -1.46, 0.19, -0.95, 0.04, -0.14, -0.54, 6.12
+  ) $
+]
+
+== PPT entangled state
+Minimising $tr[W rho]$ over the PPT cone via the SDP of @min-ppt-witness returns the state $rho$, with $tr[W rho] = -3.48 times 10^(-2) < 0$, certifying entanglement.
+
+#block(width:100%)[
+  #set text(size: 7pt)
+  #set math.equation(numbering: none)
+  $ 10^3 dot rho approx mat(delim: "[",
+  24, -17, -3, 11, -4, -2, 2, -15, 14, 4, 10, -3, 38, 32, 25, 0;
+  -17, 81, 46, -48, -2, -55, -41, 37, 4, -18, -11, 5, 32, -14, -1, 6;
+  -3, 46, 73, -55, 2, -41, 3, 26, 10, -11, 23, -17, 25, -1, 35, -27;
+  11, -48, -55, 59, -15, 37, 26, -4, -3, 5, -17, 14, 0, 6, -27, 24;
+  -4, -2, 2, -15, 64, 13, -2, -46, 45, -1, 10, -25, 12, -44, -9, -5;
+  -2, -55, -41, 37, 13, 52, 35, -22, -1, 13, -2, -11, -44, -16, -21, 2;
+  2, -41, 3, 26, -2, 35, 79, 19, 10, -2, 9, -16, -9, -21, -12, -9;
+  -15, 37, 26, -4, -46, -22, 19, 79, -25, -11, -16, 3, -5, 2, -9, 10;
+  14, 4, 10, -3, 45, -1, 10, -25, 59, -6, 8, -25, 64, -20, 3, 6;
+  4, -18, -11, 5, -1, 13, -2, -11, -6, 13, 2, -12, -20, 17, 12, -2;
+  10, -11, 23, -17, 10, -2, 9, -16, 8, 2, 30, -15, 3, 12, 32, -25;
+  -3, 5, -17, 14, -25, -11, -16, 3, -25, -12, -15, 51, 6, -2, -25, 9;
+  38, 32, 25, 0, 12, -44, -9, -5, 64, -20, 3, 6, 149, 19, 22, 20;
+  32, -14, -1, 6, -44, -16, -21, 2, -20, 17, 12, -2, 19, 90, 60, -3;
+  25, -1, 35, -27, -9, -21, -12, -9, 3, 12, 32, -25, 22, 60, 69, -24;
+  0, 6, -27, 24, -5, 2, -9, 10, 6, -2, -25, 9, 20, -3, -24, 29
+  ) $
+]
+
+Due to the imposed constraints, $rho$ is PPT: both $rho$ and $rho^Gamma$ are PSD to numerical tolerance (smallest eigenvalues $approx 9 times 10^(-14)$ and $approx -4 times 10^(-12)$).
+
+== Composition of two PPT maps
+We minimize $tr[W C_(Phi compose Psi)]$ over compositions of two PPT channels via the see-saw SDP of @min-ppt2-witness, to obtain
+
+#block(width:100%)[
+  #set text(size: 7pt)
+  #set math.equation(numbering: none)
+  $ 10^3 dot C_(Phi compose Psi) approx mat(delim: "[",
+  26, -33, -17, 20, 9, 19, 5, -38, 2, -8, -42, 14, -4, 3, 15, -3;
+  -33, 66, 48, -64, 19, -34, -29, 31, -8, 21, 17, -23, 3, -5, -5, 5;
+  -17, 48, 80, -59, 5, -29, 31, 33, -42, 17, -38, 28, 15, -5, 11, -10;
+  20, -64, -59, 77, -38, 31, 33, -6, 14, -23, 28, 15, -3, 5, -10, -2;
+  9, 19, 5, -38, 49, -3, -54, -45, 12, 10, -44, -23, -5, -1, 13, 5;
+  19, -34, -29, 31, -3, 18, 4, -24, 10, -11, -11, 6, -1, 2, 2, -1;
+  5, -29, 31, 33, -54, 4, 102, 44, -44, -11, -12, 68, 13, 2, 5, -17;
+  -38, 31, 33, -6, -45, -24, 44, 80, -23, 6, 68, 10, 5, -1, -17, -2;
+  2, -8, -42, 14, 12, 10, -44, -23, 42, -8, 18, -35, 29, -15, -37, 6;
+  -8, 21, 17, -23, 10, -11, -11, 6, -8, 9, 2, -6, -15, 5, 13, 3;
+  -42, 17, -38, 28, -44, -11, -12, 68, 18, 2, 145, -41, -37, 13, -20, 17;
+  14, -23, 28, 15, -23, 6, 68, 10, -35, -6, -41, 53, 6, 3, 17, -14;
+  -4, 3, 15, -3, -5, -1, 13, 5, 29, -15, -37, 6, 136, -58, -95, -17;
+  3, -5, -5, 5, -1, 2, 2, -1, -15, 5, 13, 3, -58, 25, 42, 6;
+  15, -5, 11, -10, 13, 2, 5, -17, -37, 13, -20, 17, -95, 42, 83, 6;
+  -3, 5, -10, -2, 5, -1, -17, -2, 6, 3, 17, -14, -17, 6, 6, 5
+  ) $
+]
+
+with minimum eigenvalues of $C_(Phi compose Psi)$ and $C_(Phi compose Psi)^Gamma$ both $approx 4 times 10^(-14)$. Neither our witness nor the level-2 DPS relaxation detect entanglement for this state, bottoming out at $tr[W C_(Phi compose Psi)] = 5.5 times 10^(-2) >= 0$.

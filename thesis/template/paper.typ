@@ -134,7 +134,7 @@
   show heading.where(level: 1): it => {
     set text(size: sf(11pt), weight: "bold")
     block(above: 1.6em, below: 0.9em)[
-      #if it.numbering != none [#counter(heading).display("1").#h(0.4em)]
+      #if it.numbering != none [#numbering(it.numbering, ..counter(heading).at(it.location())).#h(0.4em)]
       #it.body
     ]
   }
@@ -143,7 +143,7 @@
   show heading.where(level: 2): it => {
     v(1.4em, weak: true)
     set text(size: sf(9.5pt), weight: "bold")
-    if it.numbering != none [#numbering("1.1", ..counter(heading).at(it.location())).#h(0.4em)]
+    if it.numbering != none [#numbering(it.numbering, ..counter(heading).at(it.location())).#h(0.4em)]
     it.body
     [.]
     h(0.6em)
@@ -151,7 +151,7 @@
   show heading.where(level: 3): it => {
     v(1.4em, weak: true)
     set text(size: sf(9pt), weight: "bold", style: "italic")
-    if it.numbering != none [#numbering("1.1.1", ..counter(heading).at(it.location())).#h(0.4em)]
+    if it.numbering != none [#numbering(it.numbering, ..counter(heading).at(it.location())).#h(0.4em)]
     it.body
     [.]
     h(0.6em)
