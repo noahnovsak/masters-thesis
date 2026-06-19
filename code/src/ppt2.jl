@@ -8,7 +8,7 @@ using MosekTools
 using DynamicPolynomials: AbstractPolynomial, @polyvar, variables, coefficient
 using SumOfSquares: SOSModel, SOSCone, gram_matrix
 
-import Ket: partial_transpose, entanglement_robustness   # `using Ket` would clash with symmetric_projector
+import Ket: partial_transpose, partial_trace, entanglement_robustness   # `using Ket` would clash with symmetric_projector
 
 export pncp_mat, ampliation, rand_ppt, rand_sep, rand_psd, is_ppt,
     antisymmetric_projector, gram_freedom, is_block_positive,
@@ -413,12 +413,23 @@ end
 # (bound entangled) state — another way of testing/generating entanglement.
 
 """
-    min_ppt_witness(W, n, m; tol=1e-8, verbose=false) -> (value, state, detected)
+    min_ppt_witness(W, n, m; tol=1e-8, verbose=false, trace_preserving=false)
+        -> (value, state, detected)
 
-Minimise `tr(W·ρ)` over density operators `ρ` on the `[n, m]` bipartition that are
-Hermitian, PSD, unit-trace, and PPT (partial transpose over the second subsystem
-PSD), via an SDP. `W` is a fixed `(n·m)×(n·m)` block-positive PnCP witness; `ρ` is
-the variable.
+Minimise `tr(W·ρ)` over operators `ρ` on the `[n, m]` bipartition that are
+Hermitian, PSD, and PPT (partial transpose over the second subsystem PSD), via an
+SDP. `W` is a fixed `(n·m)×(n·m)` block-positive PnCP witness; `ρ` is the variable.
+
+The scale of `ρ` is fixed one of two ways:
+
+  * `trace_preserving=false` (default): unit trace `tr(ρ) = 1` — `ρ` is a quantum
+    *state*, the right object when this SDP is used to *extract a bound entangled
+    state* from `W`.
+  * `trace_preserving=true`: `tr_2[ρ] = I_n` — `ρ` is the Choi matrix of a
+    trace-preserving map (`tr(ρ) = n`). This is the **convex relaxation of the
+    see-saw [`min_ppt2_witness`](@ref)**: every composite of two PPT *channels*
+    lives in this set, so the optimum here lower-bounds the see-saw optimum on the
+    same scale. (Use `n == m` so the Choi matrix matches `W`.)
 
 Every separable state `σ` satisfies `tr(W·σ) ≥ 0`, so a negative optimum
 `value < -tol` certifies the minimiser `state` as a PPT *entangled* (bound
@@ -430,7 +441,8 @@ library; this fixes the witness and ranges the state over the PPT cone.
 optimum is already attained on the real-symmetric slice, so ranging `ρ` over
 complex Hermitian operators (as quantum states demand) costs no detection power.
 """
-function min_ppt_witness(W::AbstractMatrix, n::Int, m::Int; tol=1e-8, verbose=false)
+function min_ppt_witness(W::AbstractMatrix, n::Int, m::Int; tol=1e-8, verbose=false,
+                         trace_preserving::Bool=false)
     d = n * m
     size(W) == (d, d) || throw(DimensionMismatch(
         "W must be $(d)×$(d) for the [$n, $m] bipartition, got $(size(W))"))
@@ -439,7 +451,11 @@ function min_ppt_witness(W::AbstractMatrix, n::Int, m::Int; tol=1e-8, verbose=fa
     verbose || set_silent(model)
 
     @variable(model, ρ[1:d, 1:d] in HermitianPSDCone())                 # ρ ⪰ 0, Hermitian
-    @constraint(model, real(tr(ρ)) == 1)                                # unit trace
+    if trace_preserving
+        @constraint(model, partial_trace(Matrix(ρ), 2, [n, m]) .== Matrix{ComplexF64}(I, n, n))  # trace preserving: tr_2[ρ] = I_n (Choi of a TP map; tr = n)
+    else
+        @constraint(model, real(tr(ρ)) == 1)                            # unit trace (quantum state)
+    end
     @constraint(model, Hermitian(partial_transpose(Matrix(ρ), 2, [n, m])) in HermitianPSDCone())  # PPT
     @objective(model, Min, real(tr(W * ρ)))
 
@@ -465,9 +481,11 @@ end
 See-saw search for a PPT² counterexample detected by a fixed block-positive
 witness `W`. Minimise `tr(W · composite)`, where
 `composite = ampliation(ρ1, ρ2, n, m)` is the Choi matrix of a composition
-`Φ_1 ∘ Φ_2`, over Hermitian, PSD, unit-trace, PPT Choi matrices `ρ1`, `ρ2` on the
-`[n, m]` bipartition. `n == m` is required (square Choi) so the composite lives on
-the same space as `W`.
+`Φ_1 ∘ Φ_2`, over the Choi matrices `ρ1`, `ρ2` of two PPT *channels* on the
+`[n, m]` bipartition — Hermitian, PSD, PPT, and trace preserving (`tr_2[ρ] = I_n`).
+Trace preservation is closed under composition, so the composite is itself a
+PPT channel with `tr(composite) = n`; this fixes the composite's scale and avoids
+the trivial degeneracy of an unconstrained-trace composite shrinking to zero.
 
 A composition of PPT maps is itself PPT, so a **negative** optimum
 `value < -tol` exhibits a composition `Φ_1 ∘ Φ_2` of PPT maps whose Choi matrix is
@@ -503,7 +521,7 @@ function min_ppt2_witness(W::AbstractMatrix, n::Int, m::Int;
         model = Model(Mosek.Optimizer)
         set_silent(model)
         @variable(model, ρ[1:d, 1:d] in HermitianPSDCone())                 # ρ ⪰ 0, Hermitian
-        @constraint(model, real(tr(ρ)) == 1)                                # unit trace
+        @constraint(model, partial_trace(Matrix(ρ), 2, [n, m]) .== Matrix{ComplexF64}(I, n, n))  # trace preserving: tr_2[ρ] = I_n
         @constraint(model, Hermitian(partial_transpose(Matrix(ρ), 2, [n, m])) in HermitianPSDCone())  # PPT
         return model, ρ
     end
