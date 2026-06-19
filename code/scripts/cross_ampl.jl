@@ -11,16 +11,16 @@
 using ppt2, JLD2, LinearAlgebra, Base.Threads, Statistics, Printf
 
 BLAS.set_num_threads(1)
-const DATADIR = "/Users/noah/dev/masters-thesis/code/data"
+# Directory holding the input libraries (pncp_4x4.jld2, witness_ppt_4x4.jld2)
+const DATADIR = get(ENV, "DATADIR", "results")
 # Map acts on subsystem A (= the subsystem dual to the trace witness). We feed the
 # SWAPPED state SW·ρ·SW into the standard (I⊗Φ) ampliation, since
-# (I⊗Φ)(SW·ρ·SW) = (Φ⊗I)(ρ). The plain (I⊗Φ)(ρ) version detects nothing (wrong
-# subsystem) — see /tmp/cross_ampl.log and the verify scripts.
+# (I⊗Φ)(SW·ρ·SW) = (Φ⊗I)(ρ). The plain (I⊗Φ)(ρ) version detects nothing (wrong subsystem).
 const SUB1 = true
 const CKPT = joinpath(DATADIR, SUB1 ? "cross_ampl_sub1_4x4.jld2" : "cross_ampl_4x4.jld2")
 const TOL = 1e-8
 const n, m, r = 4, 4, 4
-const BLK = 500                                    # states per checkpoint block
+const BLK = 500
 
 forms = load_batches(joinpath(DATADIR, "pncp_4x4.jld2"))
 ws    = load_batches(joinpath(DATADIR, "witness_ppt_4x4.jld2"))
@@ -36,10 +36,8 @@ const SW = SUB1 ? Matrix{ComplexF64}(ppt2.swap(n)) : Matrix{ComplexF64}(I, n*m, 
 Bms   = Vector{Matrix{ComplexF64}}(undef, S)
 @threads for s in 1:S; Bms[s]=bmat(SW * Matrix{ComplexF64}(ws[s].state) * SW); end
 
-# Build M = (Φ⊗I)(ρ) = ampliation(form, ρ; system=1) into preallocated Mbuf from
-# the form's natural rep natA and the regrouped state Bm. Since the Bms below hold
-# the SWAPPED states (SW·ρ·SW), the standard (I⊗Φ) layout used here equals the
-# system=1 (map on subsystem A) ampliation — the leg dual to the trace witness.
+# Build M = (Φ⊗I)(ρ) = ampliation(form, ρ; system=1) into preallocated Mbuf from the
+# form's natural rep natA and the regrouped (swapped) state Bm — see the SWAP note above.
 @inline function buildM!(Cbuf, Mbuf, natA, Bm)
     mul!(Cbuf, natA, Bm)                           # C[(k,l),(α,β)]
     @inbounds for β in 1:n, l in 1:r, α in 1:n, k in 1:r

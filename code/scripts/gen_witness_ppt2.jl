@@ -1,8 +1,8 @@
 using Statistics     # median in the summary
 using Base.Threads
-using Random          # per-witness Xoshiro seeding: thread-safe and reproducible
+using Random         # per-witness seeding: thread-safe and reproducible
 using ProgressMeter
-using JLD2            # jldopen in save
+using JLD2           # jldopen in save
 using ppt2           # min_ppt2_witness, load_batches
 using ArgParse
 

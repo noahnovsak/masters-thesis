@@ -249,6 +249,36 @@ julia --project=. -t auto scripts/gen_witness_ppt2.jl -n 4 -m 4 --tol 1e-8 --res
 | `--forms`, `-f` | `pncp_NxM.jld2` | pre-generated PnCP forms |
 | `--output`, `-o` | `witness_ppt2_NxM.jld2` | output file |
 
+### `cross_trace.jl` and `cross_ampl.jl`
+
+The witness-construction SDP builds, for each PnCP witness `W_i`, exactly the one
+bound entangled state `ρ_i` that `W_i` detects by the trace test. These two scripts
+ask how far each witness reaches *beyond its own* state: they cross-evaluate the
+whole witness library against the whole witness-derived state pool (10⁴ × 10⁴ ≈ 10⁸
+pairs) and report how many foreign states each witness detects.
+
+- **`cross_trace.jl`** computes the trace functional `T[f,s] = Re tr(W_f · ρ_s)` for
+  every (witness, state) pair as a single matrix product and counts detections
+  (`T < -tol`) per witness and per state.
+- **`cross_ampl.jl`** runs the stronger, nonlinear ampliation test
+  `λ_min((Φ_{W_f} ⊗ I)(ρ_s))` over the same grid, with an allocation-free,
+  block-checkpointed inner loop that resumes after a kill.
+
+Unlike the other scripts these take **no command-line options**; they read the
+pre-generated `pncp_4x4.jld2` and `witness_ppt_4x4.jld2` from a data directory and
+write their results (`cross_trace_4x4.jld2`, `cross_ampl_*_4x4.jld2`) back to it.
+The directory defaults to `results/` and is overridable with the `DATADIR`
+environment variable:
+
+```sh
+DATADIR=results julia --project=. -t auto scripts/cross_trace.jl
+DATADIR=results julia --project=. -t auto scripts/cross_ampl.jl
+```
+
+The finding (thesis §Results) is that each witness detects essentially only the
+state extracted from it — the library behaves as a collection of single-state
+detectors.
+
 ## Output format
 
 Generated `.jld2` files store data under `batch_<id>` keys and statistics under

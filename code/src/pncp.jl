@@ -12,21 +12,10 @@
 # Helpers `⊗` and `rand_vec` are defined in `ppt2.jl` ahead of the include.
 
 """
-    segre_kernel_basis(n::Int, m::Int, Z::Matrix) -> Vector{Matrix}
+    segre_kernel_basis(n, m, Z) -> Vector{Matrix}
 
-Compute a basis of the kernels of the generators of the Segre variety, one per
-point `Z_i`.
-
-Inputs:
-    n, m [Int] - size of the problem.
-    Z [Matrix] - random points Z_i on the Segre variety as column vectors.
-
-Outputs:
-    W [Vector] - basis of the kernels for each point Z_i.
-
-We loop through the rows and columns. For each 2x2 minor created in this
-way, we store the derivative of the minor in a vector to create the
-gradient vector of the generators.
+Basis of the kernel of the Segre generators' gradients at each point `Z_i` (the
+columns of `Z`), one matrix per point — built from the derivatives of the 2×2 minors.
 """
 function segre_kernel_basis(n::Int, m::Int, Z::Matrix)
     e = (n - 1) * (m - 1)
@@ -58,24 +47,10 @@ function segre_kernel_basis(n::Int, m::Int, Z::Matrix)
 end
 
 """
-    non_sos_form(
-        n::Int, m::Int, Z::Matrix, W::Vector, h::Matrix;
-        rng=Random.GLOBAL_RNG, rand_vec=rand_vec,
-    ) -> Vector
+    non_sos_form(n, m, Z, W, h; rng, rand_vec) -> Vector
 
-Compute a quadratic form that is positive on the Segre variety but is *not* a
-sum of squares.
-
-Inputs:
-    n, m [Int] - problem dimensions
-    Z [Matrix] - random points on Segre variety
-    W [Vector] - basis of kernels of the generators
-    h [Matrix] - computed linear forms h_0, ..., h_d
-    rng [AbstractRNG] - RNG used by `rand_vec`
-    rand_vec [Function] - random sampler with signature `rand_vec(dims...; rng=...)`
-
-Outputs:
-    f [Vector] - computed quadratic form
+A quadratic form `f` that is positive on the Segre variety but *not* a sum of
+squares, given the Segre points `Z`, kernel basis `W`, and linear forms `h`.
 """
 function non_sos_form(
     n::Int, m::Int, Z::Matrix, W::Vector, h::Matrix;
@@ -133,27 +108,13 @@ function non_sos_form(
 end
 
 """
-    solve_sos(n::Int, m::Int, f::Vector, h::Matrix, l=0, fix_gram=false) -> Tuple
+    solve_sos(n, m, f, h, l=0, fix_gram=false) -> (feasible, val)
 
-Solve the SOS feasibility SDP for the form `δ·f + h⋅h`, maximizing `δ`.
-
-Inputs:
-    n, m [Int] - problem dimensions
-    f [Vector] - quadratic form
-    h [Matrix] - linear forms
-    l [Int] - degree of the relaxation (default: 0)
-    fix_gram [Bool] - when true, force the smallest Gram eigenvalues to zero and
-                      return a 'rationalized' polynomial candidate (default: false)
-
-Output:
-    (opt, val) [Tuple] where:
-      - opt [Bool] optimization terminates as OPTIMAL and margin exceeds `1e-4`
-      - val is either:
-          * `value.(poly)` (the optimized polynomial) when `fix_gram == false`
-          * `p_hat` (rationalized polynomial) when `fix_gram == true && opt == true`
-          * `value.(poly)` and `opt == false` when the rationalized candidate is SOS
-
-Note the return type of `val` depends on `fix_gram`.
+Solve the SOS feasibility SDP for `δ·f + h⋅h`, maximising `δ` over the degree-`l`
+relaxation; `feasible` is `OPTIMAL` with margin `> 1e-4`. With `fix_gram=true` the
+smallest Gram eigenvalues are zeroed and `val` is the rationalized polynomial
+certificate (see [`rationalize_certificate`](@ref)); otherwise `val` is the
+optimized polynomial `value.(poly)`.
 """
 function solve_sos(n::Int, m::Int, f::Vector, h::Matrix, l=0, fix_gram=false)
     model = SOSModel(Mosek.Optimizer)
@@ -222,22 +183,11 @@ function rationalize_certificate(gram, p, r, n, m)
 end
 
 """
-    sample_pncp_form(n::Int, m::Int; rng=Random.GLOBAL_RNG, rand_vec=rand_vec) -> (f, h)
+    sample_pncp_form(n, m; rng, rand_vec) -> (f, h)
 
-Sample one candidate for a positive-but-not-completely-positive map.
-
-The result is *unverified*: `f` is built to be non-SOS, but positivity on the
-Segre variety still has to be checked (see `find_pncp_poly`).
-
-Inputs:
-    n, m [Int] - problem dimensions
-    rng [AbstractRNG] - RNG used by `rand_vec`
-    rand_vec [Function] - random sampler with signature `rand_vec(dims...; rng=...)`
-
-Outputs:
-    (f, h) [Tuple] where:
-      - f [Vector] - quadratic form
-      - h [Matrix] - linear forms
+Sample one *unverified* PnCP candidate: the quadratic form `f` (built to be non-SOS)
+and the linear forms `h`. Positivity on the Segre variety still has to be checked —
+see [`find_pncp_poly`](@ref).
 """
 function sample_pncp_form(n::Int, m::Int; rng=Random.GLOBAL_RNG, rand_vec=rand_vec)
     d = n + m - 2
@@ -261,21 +211,11 @@ function sample_pncp_form(n::Int, m::Int; rng=Random.GLOBAL_RNG, rand_vec=rand_v
 end
 
 """
-    find_pncp_poly(n::Int, m::Int; rng=Random.GLOBAL_RNG, rand_vec=rand_vec)
+    find_pncp_poly(n, m; rng, rand_vec) -> poly or nothing
 
-Search for a verified positive-but-not-completely-positive map.
-
-Repeatedly samples candidates with `sample_pncp_form` until one is non-SOS and
-positive, then returns the rationalized polynomial certificate.
-
-Inputs:
-    n, m [Int] - problem dimensions
-    rng [AbstractRNG] - RNG used by `rand_vec`
-    rand_vec [Function] - random sampler with signature `rand_vec(dims...; rng=...)`
-
-Outputs:
-    poly [Polynomial] - rationalized polynomial certificate when successful
-    nothing - if no certificate is found within the retry budget
+Search for a verified PnCP map: sample candidates with [`sample_pncp_form`](@ref)
+until one is non-SOS and positive, then return its rationalized polynomial
+certificate. `nothing` if none is found within the retry budget.
 """
 function find_pncp_poly(n::Int, m::Int; rng=Random.GLOBAL_RNG, rand_vec=rand_vec)
     for attempt in 1:20

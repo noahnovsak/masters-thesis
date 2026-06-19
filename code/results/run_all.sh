@@ -1,24 +1,15 @@
 #!/usr/bin/env bash
-# Final-scan driver: PPT2 thesis pipeline, seed 42, 4x4, run sequentially so each
-# Julia process gets the full 40-thread budget without oversubscribing (40 cores of
-# concurrent Mosek/BLAS work; 80 OOMs on this box). Every step logs to logs/ and its
-# wall time is appended to timings.tsv. Stops at the first failure.
+# Final-scan driver: PPT2 thesis pipeline, seed 42, 4x4. Steps run sequentially so
+# each Julia process gets the full thread budget (oversubscribing OOMs on the level-2
+# DPS solves). Every step logs to logs/, appends its wall time to timings.tsv, is
+# retried 3x, and is marked done with a .done_<step> file so a rerun resumes.
 set -u
 
-cd "$(dirname "$0")/../.."          # -> code/ (Julia project root)
-RES=results/final_seed42
+cd "$(dirname "$0")/.."
+RES=results
 LOGS=$RES/logs
 THREADS=40
-# Run at full speed: -t 40 with Mosek and BLAS at their DEFAULT (multi-threaded)
-# settings — measured ~1.7x faster than pinning Mosek to one thread. Earlier OOM /
-# load-124 was system pressure from other users (each level-2 DPS solve needs a few
-# GB; 40 concurrent ~160 GB fits the idle box's ~460 GB free), not our config. Per
-# the "run fast, watch for crashes, rerun" directive: no thread restrictions; the
-# generators/ledger are resumable and run_step retries, so a pressure-kill just
-# resumes.
-# Call the resolved Julia binary directly, NOT the juliaup shim: a background
-# `juliaup self update` grabs the juliaup lock and stalls every shim invocation,
-# which would hang steps mid-run. Fall back to PATH `julia` if the path changes.
+# Resolve the Julia binary directly to avoid juliaup lock
 JBIN=$(ls -d "$HOME"/.julia/juliaup/julia-*/bin/julia 2>/dev/null | head -1)
 JBIN=${JBIN:-julia}
 J="$JBIN --project=. -t $THREADS"
@@ -113,6 +104,15 @@ run_step test_ppt2_asym "$LOGS/08_test_ppt2_asym.log" \
 run_step test_ppt2_sym "$LOGS/09_test_ppt2_sym.log" \
     $J scripts/test_ppt2.jl -n 4 -m 4 --tol 1e-8 -s "$SYM" -f "$FORMS" \
        --max-states 100 --with-dps -o "$RES/ppt2_results/sym"
+
+# 10-11. Cross-detection: test every witness-derived state against the WHOLE witness
+#        library (10^8 trace pairs, plus the stronger ampliation test). Both read the
+#        pncp/witness libraries from DATADIR and write cross_*.jld2 there.
+run_step cross_trace "$LOGS/10_cross_trace.log" \
+    env DATADIR="$RES" $J scripts/cross_trace.jl
+
+run_step cross_ampl "$LOGS/11_cross_ampl.log" \
+    env DATADIR="$RES" $J scripts/cross_ampl.jl
 
 echo ""
 echo "##### FINAL SCAN complete $(date '+%F %T') #####"

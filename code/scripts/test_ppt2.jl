@@ -1,11 +1,11 @@
-using LinearAlgebra   # eigmin diagnostics in the ledger
+using LinearAlgebra  # eigmin diagnostics in the ledger
 using Base.Threads
 using ProgressMeter
-using JLD2            # jldopen in save_result
+using JLD2           # jldopen in save_result
 using ppt2           # test_ppt2, ampliation, load_batches
 using ArgParse
-using Ket             # partial_transpose
-using Printf          # ledger formatting
+using Ket            # partial_transpose
+using Printf         # ledger formatting
 
 # The search space (every ordered pair of states) is far too large to exhaust in
 # one go, so the run is incremental and resumable. Every tested composition — not
@@ -132,8 +132,8 @@ function run_pairs(n, m, forms, states, tol, output_dir, ledger_path, limit, cri
     end
 
     # Warm up the per-pair path single-threaded (ampliation + criteria, incl. the heavy
-    # level-2 DPS compile under --with-dps, + eigmin/partial_transpose) so the first
-    # @threads wave doesn't livelock on Julia's codegen lock (observed >30 min stall).
+    # level-2 DPS compile under --with-dps) so the first @threads wave doesn't stall
+    # contending on Julia's codegen lock.
     println("Warming up the per-pair path (single-threaded compile)...")
     let comp = Matrix(ampliation(states[1], states[1], n, m))
         test_ppt2(comp; n = n, m = m, compose = false, forms = forms,

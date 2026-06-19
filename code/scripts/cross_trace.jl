@@ -8,7 +8,8 @@
 
 using ppt2, JLD2, LinearAlgebra, Base.Threads, Statistics, Printf
 
-const DATADIR = "/Users/noah/dev/masters-thesis/code/data"
+# Directory holding the input libraries (pncp_4x4.jld2, witness_ppt_4x4.jld2)
+const DATADIR = get(ENV, "DATADIR", "results")
 const TOL = 1e-8
 
 forms = load_batches(joinpath(DATADIR, "pncp_4x4.jld2"))

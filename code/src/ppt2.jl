@@ -69,19 +69,14 @@ end
     gram_freedom(n, m) -> Vector{Matrix{Float64}}
 
 Basis of the space `L` of symmetric `(n·m)×(n·m)` matrices that vanish on the real
-Segre variety: `zᵀ N z ≡ 0` for every product vector `z = x ⊗ y`. The Gram matrix
+Segre variety (`zᵀ N z ≡ 0` for every product vector `z = x ⊗ y`). The Gram matrix
 of a biquadratic form is unique only up to `L`, so `poly2mat`'s output `M₀` and
-every representative `Mλ = M₀ + Σ λα·N[α]` describe the *same* polynomial.
+every `Mλ = M₀ + Σ λα·N[α]` describe the *same* polynomial. `L` encodes the Segre
+2×2-minor relations and is isomorphic to `⋀²(ℝⁿ) ⊗ ⋀²(ℝᵐ)`.
 
-The basis encodes the Segre (2×2 minor) relations
-`(xᵢyⱼ)(xₖyₗ) − (xᵢyₗ)(xₖyⱼ) ≡ 0`; there are `binomial(n,2)·binomial(m,2)` of them
-and `L ≅ ⋀²(ℝⁿ) ⊗ ⋀²(ℝᵐ)`. This is the same construction used inside
-`non_sos_form` (the `E(i,j,k,l) - E(i,l,k,j)` span).
-
-Caveat: these vanish on *real* product vectors only. On a complex product vector
-`⟨x⊗y| N |x⊗y⟩` is generally nonzero, so adding `L` preserves real block-positivity
-but *not* complex block-positivity (the genuine witness condition — see
-[`is_block_positive`](@ref)).
+Caveat: these vanish on *real* product vectors only, so adding `L` preserves real
+block-positivity but **not** complex block-positivity — the genuine witness
+condition (see [`is_block_positive`](@ref)).
 """
 function gram_freedom(n::Int, m::Int)
     I_n, I_m = Matrix{Float64}(I, n, n), Matrix{Float64}(I, m, m)
@@ -98,15 +93,14 @@ end
     is_block_positive(W, n, m; field=:complex, trials=100_000, atol=1e-9, rng) -> Bool
 
 Monte-Carlo check that `W` is block-positive on the `[n, m]` bipartition, i.e.
-`⟨x⊗y| W |x⊗y⟩ ≥ -atol` for all product vectors. With `field=:complex` (the genuine
-entanglement-witness / positive-map condition) product vectors range over
-`ℂⁿ ⊗ ℂᵐ`; with `field=:real` over `ℝⁿ ⊗ ℝᵐ`.
+`⟨x⊗y| W |x⊗y⟩ ≥ -atol` for all product vectors. Product vectors range over
+`ℂⁿ ⊗ ℂᵐ` (`field=:complex`, the genuine witness / positive-map condition) or
+`ℝⁿ ⊗ ℝᵐ` (`field=:real`).
 
-The sampler returns `false` as soon as it finds a violating product vector, so it
-can *disprove* block-positivity but never certify it — a certificate needs an
-SOS / Positivstellensatz SDP. Note that real block-positivity is invariant under
-the [`gram_freedom`](@ref) directions while complex block-positivity is not, so
-`field=:real` cannot tell representatives `Mλ` apart.
+Returns `false` on the first violating vector, so it can *disprove* block-positivity
+but never certify it — a certificate needs an SOS / Positivstellensatz SDP.
+`field=:real` is invariant under the [`gram_freedom`](@ref) directions and so cannot
+tell representatives `Mλ` apart.
 """
 function is_block_positive(W::AbstractMatrix, n::Int, m::Int;
                            field::Symbol=:complex, trials::Int=100_000,
@@ -246,12 +240,9 @@ symmetric_projector(d::Int)     = (I(d^2) + swap(d)) / 2
 antisymmetric_projector(d::Int) = (I(d^2) - swap(d)) / 2
 
 # ── Smallest-eigenvalue sign checks ───────────────────────────────────────────
-#
-# Detecting entanglement / non-PPT-ness only needs the SIGN of the smallest
-# eigenvalue, not its value. A Cholesky factorisation of `M + tol·I` (LAPACK
-# `potrf!`) decides that sign ~6× faster than a full `eigvals` on the 16×16
-# matrices of the PPT² search, so it is the primitive behind `is_ppt` and
-# `detect_ampliation`. `min_eig` is used only where the value itself is needed.
+# The sign of λ_min suffices for entanglement / non-PPT detection; a Cholesky of
+# `M + tol·I` decides it faster than a full eigendecomposition. `min_eig` is used
+# only where the value itself is needed.
 
 """
     has_negative_eig!(M; tol=1e-8) -> Bool
@@ -292,20 +283,13 @@ function is_ppt(ρ::AbstractMatrix, dA::Int, dB::Int; tol=1e-8)
 end
 
 # ── Entanglement detection ────────────────────────────────────────────────────
-#
 # Three independent criteria; each returns the raw score, the form/witness
 # achieving it, and a `detected` flag. Entangled when trace/ampliation < -tol or
 # robustness > tol.
 
 "Linear-witness criterion: min `tr(form·τ)` over `forms`."
-# `tr(form·τ)` is real for a real-symmetric witness and Hermitian τ; `real` both
-# drops the numerical imaginary part and keeps `findmin` well-defined when τ is
-# complex (e.g. the Hermitian PPT states from `min_ppt_witness`).
-# `tr(form·τ) = real(dot(form, τ))` for a real-symmetric `form` and Hermitian `τ`
-# (tr(AB) = Σ A_ij B_ji, and B_ji = conj(B_ij)), computed WITHOUT materialising the
-# 10000 matrix products `forms .* Ref(τ)` did — those allocated ~20 MB per call and,
-# in the @threads detection loops, drove constant stop-the-world GC that collapsed
-# parallelism. `findmin(f -> …, forms)` scans allocation-free.
+# tr(form·τ) = real(dot(form, τ)) for real-symmetric `form` and Hermitian `τ`;
+# computed allocation-free so the @threads detection loops don't thrash the GC.
 detect_trace(τ, forms; tol=1e-8) = let (v, i) = findmin(form -> real(dot(form, τ)), forms)
     (value=v, idx=i, detected=v < -tol)
 end
@@ -338,13 +322,10 @@ end
 Level-`level` DPS robustness from Ket; `witness` is Ket's entanglement witness;
 `detected` when robustness `> tol`.
 
-If `τ` is stored complex but is real up to numerical noise — as the witness PPT
-states are (`min_ppt_witness` attains its optimum on the real slice, leaving an
-imaginary part ~1e-12) — the imaginary part is dropped so `entanglement_robustness`
-runs over the real PSD cone instead of the double-dimension complex Hermitian one.
-This is the same real-slice trick `test_ppt2.jl` applies on load, here guaranteed at
-the solve itself: measured ≈38× faster (2.4 s vs 92 s) with identical robustness.
-A genuinely complex `τ` (non-negligible imaginary part) is left untouched.
+If `τ` is stored complex but real up to numerical noise, the imaginary part is
+dropped so the solve runs over the real PSD cone instead of the double-dimension
+complex Hermitian one (much faster, identical robustness). A genuinely complex `τ`
+is left untouched.
 """
 function detect_dps(τ, n, m; level=2, tol=1e-8)
     M = Matrix(τ)
@@ -405,12 +386,9 @@ function test_ppt2(ρ, σ=ρ; n::Int=4, m::Int=4, compose::Bool=true,
 end
 
 # ── Witness-restricted PPT minimisation ──────────────────────────────────────
-#
-# The convex dual of `detect_trace`. There the state τ is fixed and we scan a
-# finite library of witnesses for the most negative `tr(W·τ)`; here a single
-# block-positive witness `W` is fixed and we search the *whole* PPT cone for the
-# state it detects most strongly. A negative optimum certifies a PPT entangled
-# (bound entangled) state — another way of testing/generating entanglement.
+# Dual to `detect_trace`: fix one witness `W` and search the whole PPT cone for the
+# state it detects most strongly. A negative optimum certifies a bound entangled
+# state.
 
 """
     min_ppt_witness(W, n, m; tol=1e-8, verbose=false, trace_preserving=false)
@@ -431,15 +409,10 @@ The scale of `ρ` is fixed one of two ways:
     lives in this set, so the optimum here lower-bounds the see-saw optimum on the
     same scale. (Use `n == m` so the Choi matrix matches `W`.)
 
-Every separable state `σ` satisfies `tr(W·σ) ≥ 0`, so a negative optimum
-`value < -tol` certifies the minimiser `state` as a PPT *entangled* (bound
-entangled) state witnessed by `W`, and sets `detected`. This is dual to
-[`detect_trace`](@ref): that fixes the state and ranges the witness over a finite
-library; this fixes the witness and ranges the state over the PPT cone.
-
-`state` is returned as a `Hermitian{ComplexF64}`. For a real-symmetric `W` the
-optimum is already attained on the real-symmetric slice, so ranging `ρ` over
-complex Hermitian operators (as quantum states demand) costs no detection power.
+Every separable state satisfies `tr(W·σ) ≥ 0`, so a negative optimum `value < -tol`
+certifies the minimiser `state` (a `Hermitian{ComplexF64}`) as a bound entangled
+state witnessed by `W`. Dual to [`detect_trace`](@ref), which instead ranges the
+witness over a finite library at fixed state.
 """
 function min_ppt_witness(W::AbstractMatrix, n::Int, m::Int; tol=1e-8, verbose=false,
                          trace_preserving::Bool=false)
@@ -465,14 +438,8 @@ function min_ppt_witness(W::AbstractMatrix, n::Int, m::Int; tol=1e-8, verbose=fa
 end
 
 # ── Witness-restricted PPT² composition minimisation (see-saw) ────────────────
-#
-# Like `min_ppt_witness`, but restricts the search to the states that actually
-# arise as a *composition* of two PPT maps — the PPT² setting itself — rather than
-# the whole PPT cone. The tested operator is `composite = ampliation(ρ1, ρ2)`,
-# which is *bilinear* in (ρ1, ρ2): the joint minimisation is a non-convex bilinear
-# matrix inequality, not an SDP. We solve it by see-saw (alternating SDPs), the
-# same scheme as `min_xy_form`: freeze one factor so the composite is affine in
-# the other, minimise that SDP, swap, and repeat from random PPT restarts.
+# Like `min_ppt_witness`, but restricts the search to states that arise as a
+# *composition* of two PPT maps — the PPT² setting itself.
 
 """
     min_ppt2_witness(W, n, m; restarts=16, max_iter=40, tol=1e-8, verbose=false, rng)
@@ -482,28 +449,19 @@ See-saw search for a PPT² counterexample detected by a fixed block-positive
 witness `W`. Minimise `tr(W · composite)`, where
 `composite = ampliation(ρ1, ρ2, n, m)` is the Choi matrix of a composition
 `Φ_1 ∘ Φ_2`, over the Choi matrices `ρ1`, `ρ2` of two PPT *channels* on the
-`[n, m]` bipartition — Hermitian, PSD, PPT, and trace preserving (`tr_2[ρ] = I_n`).
-Trace preservation is closed under composition, so the composite is itself a
-PPT channel with `tr(composite) = n`; this fixes the composite's scale and avoids
-the trivial degeneracy of an unconstrained-trace composite shrinking to zero.
+`[n, m]` bipartition — Hermitian, PSD, PPT, and trace preserving (`tr_2[ρ] = I_n`,
+so the composite is again a PPT channel with `tr = n`).
 
-A composition of PPT maps is itself PPT, so a **negative** optimum
-`value < -tol` exhibits a composition `Φ_1 ∘ Φ_2` of PPT maps whose Choi matrix is
-PPT *and* entangled (detected by `W`) — i.e. a **counterexample to the PPT²
+A composition of PPT maps is itself PPT, so a **negative** optimum `value < -tol`
+exhibits a composition that is PPT *and* entangled — a **counterexample to the PPT²
 conjecture**, witnessed by `W`.
 
-`ampliation(ρ1, ρ2, …)` is bilinear in `(ρ1, ρ2)`, so the joint problem is a
-non-convex bilinear matrix inequality, not an SDP. It is solved by **see-saw**:
-freeze `ρ2` and minimise over `ρ1` (an SDP — the composite is then affine in
-`ρ1`), freeze `ρ1` and minimise over `ρ2`, and alternate to convergence from
-`restarts` random PPT starts, the same scheme as [`min_xy_form`](@ref). The
-returned `value` is therefore only a *local* optimum: a negative one is a genuine
-certificate, but a non-negative one does not rule out a counterexample for `W`.
-The convex relaxation [`min_ppt_witness`](@ref) — minimising over the *whole* PPT
-cone — is a lower bound, so if *it* is `≥ 0` no composition can be negative either.
-
-The composite's own PSD/PPT constraints are dropped because they hold
-automatically for a composition of PPT maps; only the two factors are constrained.
+`ampliation` is bilinear in `(ρ1, ρ2)`, so the joint problem is solved by see-saw
+(freeze one factor, optimise the other as an SDP, alternate) from `restarts` random
+PPT starts. The returned `value` is only a *local* optimum: a negative one is a
+genuine certificate, a non-negative one is not. [`min_ppt_witness`](@ref) over the
+whole PPT cone is the convex relaxation / lower bound — if it is `≥ 0` no
+composition can be negative.
 """
 function min_ppt2_witness(W::AbstractMatrix, n::Int, m::Int;
                           restarts::Int=16, max_iter::Int=40, tol=1e-8,

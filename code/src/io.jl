@@ -44,12 +44,10 @@ state_of(x) = x isa AbstractMatrix ? x : x.state
     load_states(path) -> Vector{Matrix}
 
 Load a pre-generated state library (either layout, via [`state_of`](@ref)) as real
-matrices. The witness-PPT states are Hermitian but real-symmetric up to SDP noise
-(the PnCP witnesses are real, so `min_ppt_witness` attains its optimum on the real
-slice). Dropping the negligible imaginary part keeps every downstream SDP — above
-all the DPS robustness solve — over the real PSD cone instead of the complex
-Hermitian one (half the dimension, much faster) without changing the result; a
-non-negligible imaginary part is warned about but still dropped.
+matrices. The witness-PPT states are Hermitian but real-symmetric up to SDP noise,
+so the negligible imaginary part is dropped — keeping downstream SDPs (above all the
+DPS solve) on the real PSD cone. A non-negligible imaginary part is warned about but
+still dropped.
 """
 function load_states(path)
     states = map(state_of, load_batches(path))
