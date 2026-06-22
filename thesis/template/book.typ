@@ -121,7 +121,8 @@
   pagebreak()
 
   // --- COVER PAGE (Slovene) ---
-  if false {
+  if title_sl != "" {
+    pagebreak()
     set align(center)
     v(1fr)
     text(size: 14pt, smallcaps[Univerza v Ljubljani])
@@ -148,6 +149,7 @@
     v(1.5em)
     text(size: 12pt)[Ljubljana, #str(year)]
     v(1fr)
+    pagebreak()
   }
   pagebreak()
 
@@ -227,8 +229,10 @@
   emph(keywords_sl)
 
   // --- EXTENDED ABSTRACT (Slovene, required for theses written in English) ---
-  heading(level: 1, numbering: none, outlined: false)[Razširjeni povzetek]
-  extended_abstract_sl
+  if extended_abstract_sl != [] {
+    heading(level: 1, numbering: none, outlined: false)[Razširjeni povzetek]
+    extended_abstract_sl
+  }
 
   // --- MAIN CONTENT (numbered, with running headers) ---
   counter(page).update(1)

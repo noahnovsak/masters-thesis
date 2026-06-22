@@ -137,7 +137,8 @@
     <sort>
       <key variable="citation-number"/>
     </sort>
-    <layout prefix="[" suffix="]" delimiter=", ">
+    <!-- Non-breaking space (&#160;) after the comma so grouped citations like [1, 2] never break across lines. -->
+    <layout prefix="[" suffix="]" delimiter=",&#160;">
       <text variable="citation-number"/>
     </layout>
   </citation>
